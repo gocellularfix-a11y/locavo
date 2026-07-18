@@ -22,12 +22,24 @@ la aplicación; el build web (`dist/`) usa rutas relativas y queda listo para
 servirse en `https://locavoapp.com` cuando se publique. Los enlaces futuros de
 soporte y privacidad vivirán bajo ese dominio.
 
-## Fase 1 (este repositorio)
+## Estado actual (Fase 1.1)
 
 MVP funcional con **datos locales simulados** para una sola ciudad
 (**Culiacán**): experiencia de decisión completa (inicio → categoría/búsqueda →
 resultados con mapa → recomendación explicada → detalles → "Cómo llegar" →
 Google Maps), sin backend.
+
+La Fase 1.1 añadió: rutas públicas (`/privacy`, `/terms`, `/support`),
+endurecimiento de ubicación (timeout, permisos, mensajes humanos), fallback y
+reintento del mapa, manejo de errores al abrir Google Maps, validación de
+mensajes del WebView, persistencia tolerante a datos corruptos y scripts de
+prueba en dispositivo.
+
+**Estado: TECHNICALLY READY — OWNER DEVICE ACCEPTANCE PENDING.** Todas las
+validaciones automáticas están en verde, pero la aceptación final requiere la
+prueba física del propietario siguiendo
+[docs/DEVICE-ACCEPTANCE.md](docs/DEVICE-ACCEPTANCE.md). La app **no está
+publicada**: no hay deploy web ni DNS configurado y no está en tiendas.
 
 ## Plataformas
 
@@ -55,17 +67,29 @@ npm install
 
 ## Comandos
 
-| Comando             | Descripción                                       |
-| ------------------- | ------------------------------------------------- |
-| `npm start`         | Servidor de desarrollo Expo (QR para Expo Go)     |
-| `npm run android`   | Desarrollo apuntando a Android                    |
-| `npm run ios`       | Desarrollo apuntando a iOS (requiere macOS)       |
-| `npm run web`       | Desarrollo web                                    |
-| `npm run lint`      | ESLint (config de Expo)                           |
-| `npm run typecheck` | TypeScript estricto sin emitir                    |
-| `npm test`          | Pruebas unitarias (Jest + jest-expo)              |
-| `npm run build:web` | Build web estático de producción (carpeta `dist`) |
-| `npm run validate`  | lint + typecheck + tests + build web              |
+| Comando                  | Descripción                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `npm start`              | Servidor de desarrollo Expo (QR para Expo Go)              |
+| `npm run start:lan`      | Desarrollo por red local — para probar en tu teléfono      |
+| `npm run start:tunnel`   | Alternativa por túnel cuando la red LAN bloquea el acceso  |
+| `npm run android`        | Compila e instala el proyecto nativo Android (`run:android`) |
+| `npm run ios`            | Compila e instala el proyecto nativo iOS (requiere macOS)  |
+| `npm run web`            | Desarrollo web                                             |
+| `npm run lint`           | ESLint (config de Expo)                                    |
+| `npm run typecheck`      | TypeScript estricto sin emitir                             |
+| `npm test`               | Pruebas unitarias (Jest + jest-expo)                       |
+| `npm run build:web`      | Build web estático de producción (carpeta `dist`)          |
+| `npm run acceptance:web` | Build web + servidor local para la aceptación PWA          |
+| `npm run validate`       | lint + typecheck + tests + build web                       |
+
+### Probar en tu teléfono (Android / iPhone)
+
+1. Instala **Expo Go** en el teléfono.
+2. Conecta computadora y teléfono a la misma red Wi-Fi.
+3. `npm run start:lan` y escanea el QR (usa `npm run start:tunnel` si la red
+   bloquea la conexión directa).
+4. Sigue la guía completa de escenarios en
+   [docs/DEVICE-ACCEPTANCE.md](docs/DEVICE-ACCEPTANCE.md).
 
 ### Probar el build web/PWA localmente
 
@@ -94,6 +118,17 @@ src/
   utils/        Normalización de texto y formato
 public/         manifest.webmanifest, sw.js, iconos PWA
 ```
+
+## Rutas públicas
+
+La versión web expone páginas informativas que funcionan por URL directa,
+con refresco del navegador y desde el build estático:
+
+- `/privacy` — cómo se maneja la ubicación y los datos (fase demo).
+- `/terms` — condiciones de la fase de demostración.
+- `/support` — preguntas frecuentes (ubicación, mapa, Google Maps, PWA).
+
+También son accesibles dentro de la app desde **Ajustes → Información**.
 
 ## Datos simulados
 
@@ -132,7 +167,12 @@ agregar Waze o Apple Maps en el futuro (no implementados).
 `MapSurface` muestra contexto con Leaflet + teselas de OpenStreetMap
 (circle markers, sin claves de API): WebView en Android/iOS y DOM en web.
 El mapa interno no usa Google Maps ni implica integración comercial alguna.
-Requiere conexión para las teselas.
+Requiere conexión para las teselas (el mapa **no** funciona offline).
+
+Si el mapa no puede cargar (sin red, error del proveedor o timeout), se
+muestra un aviso con **"Reintentar mapa"** y la lista de lugares, la búsqueda
+y la recomendación siguen funcionando. Los mensajes entre el WebView y la app
+se validan contra una allowlist y las coordenadas se sanean antes de pintarse.
 
 ## Pruebas
 

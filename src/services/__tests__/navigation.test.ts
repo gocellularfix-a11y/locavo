@@ -43,4 +43,22 @@ describe('GoogleMapsNavigationProvider', () => {
     const ok = await provider.openDirections({ latitude: 24.8069, longitude: -107.394 });
     expect(ok).toBe(false);
   });
+
+  it('openDirections no lanza con coordenadas inválidas: devuelve false y no abre nada', async () => {
+    const spy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const ok = await provider.openDirections({ latitude: NaN, longitude: Infinity });
+    expect(ok).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('permite reintentar tras un fallo (intentos repetidos)', async () => {
+    const spy = jest
+      .spyOn(Linking, 'openURL')
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValueOnce(true);
+    const dest = { latitude: 24.8069, longitude: -107.394 };
+    await expect(provider.openDirections(dest)).resolves.toBe(false);
+    await expect(provider.openDirections(dest)).resolves.toBe(true);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 });

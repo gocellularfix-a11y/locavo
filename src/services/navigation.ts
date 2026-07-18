@@ -43,11 +43,12 @@ export class GoogleMapsNavigationProvider implements NavigationProvider {
   }
 
   async openDirections(destination: Coordinates): Promise<boolean> {
-    const url = this.buildDirectionsUrl(destination);
     try {
+      const url = this.buildDirectionsUrl(destination);
       await Linking.openURL(url);
       return true;
     } catch {
+      // Coordenadas inválidas o sistema sin manejador para la URL.
       return false;
     }
   }

@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -54,7 +56,33 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        minHeight: 48,
+        borderRadius: radii.button,
+        paddingHorizontal: spacing.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: pressed ? colors.neutralSoft : colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+      })}
+    >
+      <AppText variant="bodyStrong">{label}</AppText>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
+  const router = useRouter();
   const { mode, setMode } = useAppTheme();
   const location = useLocationState();
 
@@ -106,6 +134,14 @@ export default function SettingsScreen() {
             rastrea en segundo plano, no se guarda historial de recorridos y nada se envía a
             servidores. Los eventos de uso se registran solo en este dispositivo.
           </AppText>
+        </Section>
+
+        <Section title="Información">
+          <View style={{ gap: spacing.sm }}>
+            <LinkRow label="Privacidad" onPress={() => router.push('/privacy')} />
+            <LinkRow label="Términos de uso" onPress={() => router.push('/terms')} />
+            <LinkRow label="Soporte" onPress={() => router.push('/support')} />
+          </View>
         </Section>
 
         <Section title="Datos de demostración">

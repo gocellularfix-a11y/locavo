@@ -9,9 +9,10 @@ import React, {
 } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { parseThemeMode, type ThemeMode } from './themeMode';
 import { darkColors, lightColors, type ColorPalette } from './tokens';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type { ThemeMode };
 
 export interface AppTheme {
   colors: ColorPalette;
@@ -32,8 +33,9 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
-        if (!cancelled && (stored === 'light' || stored === 'dark' || stored === 'system')) {
-          setModeState(stored);
+        const parsed = parseThemeMode(stored);
+        if (!cancelled && parsed) {
+          setModeState(parsed);
         }
       })
       .catch(() => undefined);

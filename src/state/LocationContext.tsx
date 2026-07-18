@@ -11,8 +11,9 @@ import React, {
 import type { Coordinates } from '../domain/place';
 import {
   DEFAULT_MANUAL_LOCATION,
-  MANUAL_LOCATIONS,
   readCurrentLocation,
+  resolveManualLocation,
+  type LocationFailureReason,
   type ManualLocation,
 } from '../services/location';
 
@@ -21,17 +22,20 @@ import {
  *
  * Siempre hay coordenadas utilizables: si no hay permiso o falla el GPS,
  * se usa la ubicación manual (demo) seleccionada, por defecto el Centro
- * de Culiacán. Solo se guarda en el dispositivo el id de la zona manual.
+ * de Culiacán. Solo se persiste el id de la zona manual; nunca coordenadas
+ * del usuario.
  */
 
 export type LocationSource = 'gps' | 'manual';
-export type LocationRequestState = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable';
+export type LocationRequestState = 'idle' | 'requesting' | 'granted' | 'failed';
 
 export interface LocationState {
   coords: Coordinates;
   source: LocationSource;
   label: string;
   requestState: LocationRequestState;
+  /** Motivo de la última falla (solo cuando requestState === 'failed'). */
+  failureReason: LocationFailureReason | null;
   manualLocation: ManualLocation;
   useCurrentLocation: () => Promise<void>;
   setManualLocation: (location: ManualLocation) => void;
@@ -45,14 +49,15 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [manualLocation, setManualState] = useState<ManualLocation>(DEFAULT_MANUAL_LOCATION);
   const [gpsCoords, setGpsCoords] = useState<Coordinates | null>(null);
   const [requestState, setRequestState] = useState<LocationRequestState>('idle');
+  const [failureReason, setFailureReason] = useState<LocationFailureReason | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((storedId) => {
-        const found = MANUAL_LOCATIONS.find((l) => l.id === storedId);
-        if (!cancelled && found) {
-          setManualState(found);
+        if (!cancelled) {
+          // Un id desconocido/corrupto degrada al default seguro.
+          setManualState(resolveManualLocation(storedId));
         }
       })
       .catch(() => undefined);
@@ -63,13 +68,16 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const useCurrentLocation = useCallback(async () => {
     setRequestState('requesting');
+    setFailureReason(null);
     const result = await readCurrentLocation();
-    if (result.permission === 'granted' && result.coords) {
+    if (result.status === 'granted' && result.coords) {
       setGpsCoords(result.coords);
       setRequestState('granted');
+      setFailureReason(null);
     } else {
       setGpsCoords(null);
-      setRequestState(result.permission === 'denied' ? 'denied' : 'unavailable');
+      setRequestState('failed');
+      setFailureReason(result.reason ?? 'error');
     }
   }, []);
 
@@ -77,6 +85,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     setManualState(location);
     setGpsCoords(null);
     setRequestState('idle');
+    setFailureReason(null);
     AsyncStorage.setItem(STORAGE_KEY, location.id).catch(() => undefined);
   }, []);
 
@@ -87,11 +96,12 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       source: usingGps ? 'gps' : 'manual',
       label: usingGps ? 'Tu ubicación actual' : manualLocation.label,
       requestState,
+      failureReason,
       manualLocation,
       useCurrentLocation,
       setManualLocation,
     };
-  }, [gpsCoords, manualLocation, requestState, useCurrentLocation, setManualLocation]);
+  }, [gpsCoords, manualLocation, requestState, failureReason, useCurrentLocation, setManualLocation]);
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
 }

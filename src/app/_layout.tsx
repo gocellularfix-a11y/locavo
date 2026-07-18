@@ -10,6 +10,7 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { APP_CONFIG } from '../config/appConfig';
@@ -55,7 +56,10 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  // En web no se bloquea el render (la fuente entra por swap y el export
+  // estático necesita HTML con contenido real); en nativo se espera a Inter
+  // detrás del splash.
+  if (!fontsLoaded && Platform.OS !== 'web') {
     return null;
   }
 

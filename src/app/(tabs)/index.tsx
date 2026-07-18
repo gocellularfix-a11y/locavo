@@ -8,13 +8,16 @@ import { AppText } from '../../components/AppText';
 import { CategoryCard } from '../../components/CategoryCard';
 import { LoadingState } from '../../components/FeedbackStates';
 import { LocavoWordmark } from '../../components/LocavoWordmark';
+import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SearchField } from '../../components/SearchField';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import type { ScoredPlace } from '../../domain/recommendation';
+import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
-import { analytics, navigationProvider } from '../../services/container';
+import { analytics } from '../../services/container';
+import { describeLocationFailure } from '../../services/location';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme/tokens';
@@ -62,13 +65,9 @@ export default function HomeScreen() {
     router.push({ pathname: '/explore', params: { category: category.id } });
   };
 
+  const directions = useDirections();
   const navigateTo = (scored: ScoredPlace) => {
-    analytics.track({
-      eventName: 'navigation_requested',
-      navigationProvider: navigationProvider.id,
-      placeId: scored.place.id,
-    });
-    navigationProvider.openDirections(scored.place);
+    directions.navigateTo(scored.place);
   };
 
   const cycleTheme = () => {
@@ -147,16 +146,14 @@ export default function HomeScreen() {
               }}
               accessibilityHint="Pide permiso de ubicación y usa tu posición actual una sola vez"
             />
-            {location.requestState === 'denied' ? (
-              <AppText variant="caption" tone="secondary">
-                Permiso rechazado. Seguimos usando {location.manualLocation.label} como referencia;
-                puedes cambiar la zona en Ajustes.
-              </AppText>
-            ) : null}
-            {location.requestState === 'unavailable' ? (
-              <AppText variant="caption" tone="secondary">
-                Tu ubicación no está disponible ahora. Usamos {location.manualLocation.label} como
-                referencia.
+            {location.requestState === 'failed' && location.failureReason ? (
+              <AppText
+                variant="caption"
+                tone="secondary"
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                {describeLocationFailure(location.failureReason, location.manualLocation.label)}
               </AppText>
             ) : null}
           </View>
@@ -189,6 +186,13 @@ export default function HomeScreen() {
               scored={recommended}
               onNavigate={navigateTo}
               onDetails={(scored) => router.push(`/place/${scored.place.id}`)}
+            />
+          ) : null}
+          {directions.failedPlace ? (
+            <NavigationErrorNotice
+              placeName={directions.failedPlace.name}
+              onRetry={directions.retry}
+              onDismiss={directions.dismiss}
             />
           ) : null}
         </View>

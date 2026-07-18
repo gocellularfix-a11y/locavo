@@ -7,13 +7,15 @@ import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
 import { ConfidenceIndicator } from '../../components/ConfidenceIndicator';
 import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackStates';
+import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatusBadge } from '../../components/StatusBadge';
 import { getCategoryMeta } from '../../domain/categories';
 import { formatDistance, formatTravelTime } from '../../domain/distance';
 import type { Place } from '../../domain/place';
 import { explainReasons, scorePlace } from '../../domain/recommendation';
-import { analytics, navigationProvider, placeRepository } from '../../services/container';
+import { useDirections } from '../../hooks/useDirections';
+import { analytics, placeRepository } from '../../services/container';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme/tokens';
@@ -56,6 +58,7 @@ export default function PlaceDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const location = useLocationState();
+  const directions = useDirections();
   const { id } = useLocalSearchParams<{ id: string }>();
   const validId = typeof id === 'string' && id.length > 0 ? id : null;
   const [state, setState] = useState<LoadState>({ status: 'loading' });
@@ -152,15 +155,18 @@ export default function PlaceDetailScreen() {
           label="Cómo llegar"
           icon="navigate"
           onPress={() => {
-            analytics.track({
-              eventName: 'navigation_requested',
-              navigationProvider: navigationProvider.id,
-              placeId: place.id,
-            });
-            navigationProvider.openDirections(place);
+            directions.navigateTo(place);
           }}
           accessibilityHint="Abre Google Maps con la ruta al lugar"
         />
+
+        {directions.failedPlace ? (
+          <NavigationErrorNotice
+            placeName={directions.failedPlace.name}
+            onRetry={directions.retry}
+            onDismiss={directions.dismiss}
+          />
+        ) : null}
 
         <View style={{ gap: spacing.lg }}>
           <DetailRow icon="location" label="Dirección" value={place.address} />

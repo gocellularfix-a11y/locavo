@@ -5,6 +5,7 @@ import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackStates';
+import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { PlaceCard } from '../../components/PlaceCard';
 import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
@@ -13,8 +14,9 @@ import { CATEGORIES, getCategoryMeta, isCategoryId } from '../../domain/categori
 import type { CategoryId } from '../../domain/place';
 import type { ScoredPlace } from '../../domain/recommendation';
 import { MapSurface } from '../../features/map/MapSurface';
+import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
-import { analytics, navigationProvider } from '../../services/container';
+import { analytics } from '../../services/container';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
@@ -122,15 +124,19 @@ export default function ExploreScreen() {
   const categoryLabel = category ? getCategoryMeta(category).label : 'Todos los lugares';
   const isWide = width >= 900;
 
+  const directions = useDirections();
   const navigateTo = (scored: ScoredPlace) => {
-    analytics.track({
-      eventName: 'navigation_requested',
-      navigationProvider: navigationProvider.id,
-      placeId: scored.place.id,
-    });
-    navigationProvider.openDirections(scored.place);
+    directions.navigateTo(scored.place);
   };
   const openDetails = (scored: ScoredPlace) => router.push(`/place/${scored.place.id}`);
+
+  const navigationNotice = directions.failedPlace ? (
+    <NavigationErrorNotice
+      placeName={directions.failedPlace.name}
+      onRetry={directions.retry}
+      onDismiss={directions.dismiss}
+    />
+  ) : null;
 
   const header = (
     <View style={{ gap: spacing.lg }}>
@@ -273,6 +279,7 @@ export default function ExploreScreen() {
               onDetails={openDetails}
             />
           ) : null}
+          {navigationNotice}
           {listBlock}
         </View>
         <View style={{ flex: 4 }}>{mapBlock}</View>
@@ -288,6 +295,7 @@ export default function ExploreScreen() {
             onDetails={openDetails}
           />
         ) : null}
+        {navigationNotice}
         {mapBlock}
         {listBlock}
       </View>

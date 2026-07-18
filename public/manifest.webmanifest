@@ -1,7 +1,7 @@
 {
   "name": "Locavo",
   "short_name": "Locavo",
-  "description": "Locavo te ayuda a decidir a dónde ir ahora en Culiacán. No busques. Decide.",
+  "description": "Locavo te ayuda a decidir rápidamente dónde comer, tomar café, comprar o salir cerca de ti.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
