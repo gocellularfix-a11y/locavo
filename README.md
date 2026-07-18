@@ -1,6 +1,6 @@
 # Locavo
 
-**No busques. Decide.**
+**No busques. Decide.** · Dominio oficial: [locavoapp.com](https://locavoapp.com)
 
 Locavo es una aplicación universal (Android, iOS y web/PWA) que ayuda a decidir
 rápidamente a dónde ir **ahora** en Culiacán, Sinaloa: combina ubicación,
@@ -11,6 +11,16 @@ clara de por qué.
 A diferencia de un mapa tradicional (que responde *"¿dónde está?"*), Locavo
 responde *"¿cuál opción me conviene ahora?"*. El objetivo de flujo: de una
 necesidad a iniciar navegación en menos de diez segundos.
+
+## Dominio oficial
+
+El dominio del producto es **locavoapp.com** (el producto se llama *Locavo*).
+La identidad está centralizada en `src/config/appConfig.ts` (`APP_CONFIG`) y se
+usa en la metadata web (título, descripción, URL canónica, Open Graph) y la
+PWA. En Fase 1 **no hay deploy ni DNS configurado**: el dominio aún no apunta a
+la aplicación; el build web (`dist/`) usa rutas relativas y queda listo para
+servirse en `https://locavoapp.com` cuando se publique. Los enlaces futuros de
+soporte y privacidad vivirán bajo ese dominio.
 
 ## Fase 1 (este repositorio)
 

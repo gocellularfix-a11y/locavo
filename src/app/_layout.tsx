@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { APP_CONFIG } from '../config/appConfig';
 import { LocationProvider } from '../state/LocationContext';
 import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
@@ -22,11 +23,9 @@ function RootNavigator() {
   return (
     <>
       <Head>
-        <title>Locavo</title>
-        <meta
-          name="description"
-          content="Locavo te ayuda a decidir a dónde ir ahora en Culiacán. No busques. Decide."
-        />
+        <title>{APP_CONFIG.name}</title>
+        <meta name="description" content={APP_CONFIG.description} />
+        <link rel="canonical" href={APP_CONFIG.canonicalUrl} />
       </Head>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack

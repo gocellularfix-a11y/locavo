@@ -1,7 +1,7 @@
 {
   "name": "Locavo",
   "short_name": "Locavo",
-  "description": "Decide a dónde ir ahora en Culiacán. No busques. Decide.",
+  "description": "Locavo te ayuda a decidir a dónde ir ahora en Culiacán. No busques. Decide.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
