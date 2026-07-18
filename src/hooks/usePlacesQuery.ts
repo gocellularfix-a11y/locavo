@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { CategoryId, Place } from '../domain/place';
-import { rankPlaces, type ScoredPlace } from '../domain/recommendation';
-import { searchPlaces } from '../domain/search';
-import { placeRepository } from '../services/container';
+import type { CategoryId } from '../domain/place';
+import { placeSearchService } from '../services/container';
+import type { ScoredPlace } from '../services/places/PlaceRankingService';
 import { useLocationState } from '../state/LocationContext';
 
 export type QueryStatus = 'loading' | 'ready' | 'error';
@@ -25,58 +24,49 @@ export interface PlacesQueryResult {
 }
 
 /**
- * Carga lugares del repositorio, aplica categoría/búsqueda/filtros y los
- * ordena con el motor de recomendación usando la ubicación activa.
+ * Puente pantalla ↔ PlaceSearchService (V3).
+ * Las pantallas nunca tocan repositorios ni datos mock directamente.
  */
 export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryResult {
   const { coords } = useLocationState();
   const { category = null, query = '', openOnly = false, sort = 'best' } = options;
 
-  const [allPlaces, setAllPlaces] = useState<Place[] | null>(null);
+  const [results, setResults] = useState<ScoredPlace[]>([]);
   const [status, setStatus] = useState<QueryStatus>('loading');
   const [reloadToken, setReloadToken] = useState(0);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
+    const seq = ++requestSeq.current;
     let cancelled = false;
-    placeRepository
-      .listPlaces()
-      .then((places) => {
-        if (!cancelled) {
-          setAllPlaces(places);
+    placeSearchService
+      .search({
+        origin: coords,
+        category,
+        text: query,
+        openNow: openOnly,
+        sort,
+      })
+      .then((response) => {
+        if (!cancelled && seq === requestSeq.current) {
+          setResults(response.results);
           setStatus('ready');
         }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && seq === requestSeq.current) {
           setStatus('error');
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, [coords, category, query, openOnly, sort, reloadToken]);
 
   const reload = useCallback(() => {
     setStatus('loading');
     setReloadToken((t) => t + 1);
   }, []);
-
-  const results = useMemo<ScoredPlace[]>(() => {
-    if (!allPlaces) {
-      return [];
-    }
-    const now = new Date();
-    let filtered = category ? allPlaces.filter((p) => p.category === category) : allPlaces;
-    filtered = searchPlaces(filtered, query);
-    let ranked = rankPlaces(filtered, coords, now);
-    if (openOnly) {
-      ranked = ranked.filter((r) => r.status.state === 'open');
-    }
-    if (sort === 'distance') {
-      ranked = [...ranked].sort((a, b) => a.distanceKm - b.distanceKm);
-    }
-    return ranked;
-  }, [allPlaces, category, query, openOnly, sort, coords]);
 
   return {
     status,

@@ -11,21 +11,32 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackS
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatusBadge } from '../../components/StatusBadge';
-import { formatDistance, formatTravelTime } from '../../domain/distance';
-import type { Place } from '../../domain/place';
-import { explainReasons, scorePlace } from '../../domain/recommendation';
+import {
+  confidenceLevelOf,
+  isDemoPlace,
+  primarySourceOf,
+  type LocavoPlace,
+} from '../../domain/places/LocavoPlace';
+import {
+  explainReasonsLocalized,
+  formatDistanceLocalized,
+  formatTravelTimeLocalized,
+  formatVerifiedDateLocalized,
+  priceLevelText,
+} from '../../i18n/format';
+import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
-import { analytics, placeRepository } from '../../services/container';
+import { analytics, placeSearchService } from '../../services/container';
+import { scorePlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme/tokens';
-import { formatPriceLevel, formatVerifiedDate } from '../../utils/format';
 
 type LoadState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'not-found' }
-  | { status: 'ready'; place: Place };
+  | { status: 'ready'; place: LocavoPlace };
 
 function DetailRow({
   icon,
@@ -57,6 +68,7 @@ function DetailRow({
 export default function PlaceDetailScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { t, locale } = useI18n();
   const location = useLocationState();
   const directions = useDirections();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -75,8 +87,8 @@ export default function PlaceDetailScreen() {
       return;
     }
     let cancelled = false;
-    placeRepository
-      .getPlaceById(validId)
+    placeSearchService
+      .getById(validId)
       .then((place) => {
         if (!cancelled) {
           setState(place ? { status: 'ready', place } : { status: 'not-found' });
@@ -114,18 +126,19 @@ export default function PlaceDetailScreen() {
   if (!validId || state.status === 'not-found') {
     body = (
       <EmptyState
-        title="Lugar no encontrado"
-        message="Este lugar ya no está disponible en los datos de demostración."
-        actionLabel="Volver al inicio"
+        title={t('place.notFoundTitle')}
+        message={t('place.notFoundBody')}
+        actionLabel={t('common.goHome')}
         onAction={() => router.push('/')}
       />
     );
   } else if (state.status === 'loading') {
-    body = <LoadingState message="Cargando lugar…" />;
+    body = <LoadingState message={t('place.loading')} />;
   } else if (state.status === 'error') {
     body = <ErrorState onRetry={() => router.replace(`/place/${validId}`)} />;
   } else if (scored) {
     const { place } = state;
+    const website = place.contact?.website;
     body = (
       <View style={{ gap: spacing.xl }}>
         <View style={{ gap: spacing.sm }}>
@@ -140,21 +153,22 @@ export default function PlaceDetailScreen() {
         >
           <StatusBadge status={scored.status} />
           <AppText variant="bodyStrong" tone="secondary">
-            {formatDistance(scored.distanceKm)} · {formatTravelTime(scored.travelMinutes)}
+            {formatDistanceLocalized(scored.distanceKm, locale)} ·{' '}
+            {formatTravelTimeLocalized(scored.travelMinutes, locale)}
           </AppText>
         </View>
 
         <AppText variant="body" tone="secondary">
-          {explainReasons(scored.reasons)}
+          {explainReasonsLocalized(scored.reasons, locale)}
         </AppText>
 
         <AppButton
-          label="Cómo llegar"
+          label={t('place.directions')}
           icon="navigate"
           onPress={() => {
             directions.navigateTo(place);
           }}
-          accessibilityHint="Abre Google Maps con la ruta al lugar"
+          accessibilityHint={t('place.directionsHint')}
         />
 
         {directions.failedPlace ? (
@@ -166,33 +180,44 @@ export default function PlaceDetailScreen() {
         ) : null}
 
         <View style={{ gap: spacing.lg }}>
-          <DetailRow icon="location" label="Dirección" value={place.address} />
-          {place.phone ? <DetailRow icon="call" label="Teléfono" value={place.phone} /> : null}
-          {place.website ? (
+          {place.address?.formatted ? (
+            <DetailRow icon="location" label={t('place.address')} value={place.address.formatted} />
+          ) : null}
+          {place.contact?.phone ? (
+            <DetailRow icon="call" label={t('place.phone')} value={place.contact.phone} />
+          ) : null}
+          {website ? (
             <Pressable
               onPress={() => {
-                Linking.openURL(place.website as string).catch(() => undefined);
+                Linking.openURL(website).catch(() => undefined);
               }}
               accessibilityRole="link"
-              accessibilityLabel={`Abrir sitio web de ${place.name}`}
+              accessibilityLabel={t('place.websiteA11y', { name: place.name })}
             >
-              <DetailRow icon="globe" label="Sitio web" value={place.website} />
+              <DetailRow icon="globe" label={t('place.website')} value={website} />
             </Pressable>
           ) : null}
-          <DetailRow icon="cash" label="Nivel de precio" value={formatPriceLevel(place.priceLevel)} />
+          <DetailRow
+            icon="cash"
+            label={t('place.priceLevel')}
+            value={priceLevelText(place.price?.level, locale)}
+          />
           <DetailRow
             icon="cloud-outline"
-            label="Fuente"
-            value={place.isDemo ? 'Datos de demostración (demo-seed)' : place.source}
+            label={t('place.source')}
+            value={isDemoPlace(place) ? t('place.sourceDemo') : primarySourceOf(place)}
           />
-          <DetailRow icon="checkmark-done" label="Última verificación" value={formatVerifiedDate(place.lastVerifiedAt)} />
+          <DetailRow
+            icon="checkmark-done"
+            label={t('place.lastVerification')}
+            value={formatVerifiedDateLocalized(place.verification.lastVerifiedAt, locale)}
+          />
         </View>
 
-        <ConfidenceIndicator level={place.confidence} />
+        <ConfidenceIndicator level={confidenceLevelOf(place.verification.confidence)} />
 
         <AppText variant="caption" tone="muted">
-          Locavo registra tu intención de navegar, no confirma visitas ni compras. La ruta se abre
-          en Google Maps.
+          {t('place.navNote')}
         </AppText>
       </View>
     );
@@ -204,7 +229,7 @@ export default function PlaceDetailScreen() {
         <Pressable
           onPress={back}
           accessibilityRole="button"
-          accessibilityLabel="Volver"
+          accessibilityLabel={t('common.back')}
           hitSlop={8}
           style={({ pressed }) => ({
             width: 44,

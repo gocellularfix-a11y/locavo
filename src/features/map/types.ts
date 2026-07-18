@@ -41,6 +41,8 @@ export interface MapUpdatePayload {
   selectedId: string | null;
   userLocation: Coordinates | null;
   palette: MapPalette;
+  /** Texto localizado del tooltip de la posición del usuario. */
+  userLabel: string;
 }
 
 export const DEFAULT_MAP_HEIGHT = 260;

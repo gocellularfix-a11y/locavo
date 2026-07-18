@@ -1,10 +1,4 @@
-import {
-  estimateTravelMinutes,
-  formatDistance,
-  formatTravelTime,
-  haversineKm,
-  isValidCoordinates,
-} from '../distance';
+import { estimateTravelMinutes, haversineKm, isValidCoordinates } from '../distance';
 
 const CENTER = { latitude: 24.8069, longitude: -107.394 };
 
@@ -55,16 +49,4 @@ describe('estimateTravelMinutes (aproximación urbana, sin tráfico real)', () =
   });
 });
 
-describe('formato visible', () => {
-  it('metros para menos de 1 km', () => {
-    expect(formatDistance(0.35)).toBe('A 350 m');
-  });
-
-  it('kilómetros con un decimal', () => {
-    expect(formatDistance(1.44)).toBe('A 1.4 km');
-  });
-
-  it('tiempo aproximado', () => {
-    expect(formatTravelTime(5)).toBe('Aprox. 5 min');
-  });
-});
+// El formato visible de distancia/tiempo se prueba en i18n/__tests__/format.test.ts.

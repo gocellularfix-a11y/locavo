@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
+import { useI18n } from '../../i18n/I18nContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 
@@ -13,6 +14,7 @@ import { radii, spacing } from '../../theme/tokens';
  */
 export function MapFallback({ height, onRetry }: { height: number; onRetry: () => void }) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   return (
     <View
       accessibilityRole="alert"
@@ -31,12 +33,12 @@ export function MapFallback({ height, onRetry }: { height: number; onRetry: () =
     >
       <Ionicons name="map-outline" size={36} color={colors.textMuted} />
       <AppText variant="cardTitle" style={{ textAlign: 'center' }}>
-        No pudimos cargar el mapa.
+        {t('map.failedTitle')}
       </AppText>
       <AppText tone="secondary" style={{ textAlign: 'center' }}>
-        Puedes seguir usando la lista de lugares.
+        {t('map.failedBody')}
       </AppText>
-      <AppButton label="Reintentar mapa" variant="secondary" icon="refresh" onPress={onRetry} />
+      <AppButton label={t('map.retry')} variant="secondary" icon="refresh" onPress={onRetry} />
     </View>
   );
 }

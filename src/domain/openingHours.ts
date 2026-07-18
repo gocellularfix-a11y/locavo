@@ -107,19 +107,8 @@ export function formatTime12h(time: string): string {
   return `${hours12}:${String(mins).padStart(2, '0')} ${suffix}`;
 }
 
-/** Texto accesible y visible del estado: 'Abierto hasta las 11:00 p. m.', 'Cerrado', 'Horario no confirmado'. */
-export function describeOpenStatus(status: OpenStatus): string {
-  switch (status.state) {
-    case 'open':
-      return status.closesAt
-        ? `Abierto hasta las ${formatTime12h(status.closesAt)}`
-        : 'Abierto';
-    case 'closed':
-      return 'Cerrado';
-    case 'unknown':
-      return 'Horario no confirmado';
-  }
-}
+// Nota V3: el texto visible del estado vive en i18n/format.ts
+// (openStatusText) según el locale; el dominio solo entrega OpenStatus.
 
 /** Utilidad para minutos-del-día → 'HH:mm' (usada en datos y pruebas). */
 export function minutesToTime(minutes: number): string {

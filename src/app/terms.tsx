@@ -1,35 +1,29 @@
 import React from 'react';
 
 import { LegalPage } from '../components/LegalPage';
+import { useI18n } from '../i18n/I18nContext';
 
 export default function TermsScreen() {
+  const { t } = useI18n();
   return (
     <LegalPage
-      title="Términos de uso"
-      intro="Condiciones de la fase actual de demostración de Locavo."
+      title={t('terms.title')}
+      intro={t('terms.intro')}
       sections={[
         {
-          heading: 'Información demostrativa',
-          paragraphs: [
-            'La información mostrada en esta fase es demostrativa: los lugares son datos simulados y no representan negocios reales verificados.',
-            'Todavía no existe una relación comercial entre Locavo y los negocios que aparecen en la aplicación.',
-          ],
+          heading: t('terms.demo.title'),
+          paragraphs: [t('terms.demo.body1'), t('terms.demo.body2')],
         },
         {
-          heading: 'Aproximaciones',
-          paragraphs: [
-            'Los horarios, distancias y tiempos de traslado son aproximados y pueden no reflejar la realidad. No se usa información de tráfico en tiempo real.',
-            'Antes de tomar decisiones importantes (por ejemplo, un horario de cierre o la disponibilidad de un servicio), confirma la información directamente con el lugar.',
-          ],
+          heading: t('terms.approx.title'),
+          paragraphs: [t('terms.approx.body1'), t('terms.approx.body2')],
         },
         {
-          heading: 'Navegación',
-          paragraphs: [
-            'Locavo no ofrece navegación propia paso a paso. Al pedir indicaciones se abre Google Maps, que es un servicio externo con sus propios términos y condiciones.',
-          ],
+          heading: t('terms.nav.title'),
+          paragraphs: [t('terms.nav.body')],
         },
       ]}
-      note="Documento inicial de producto. Será revisado antes de la publicación comercial."
+      note={t('legal.note')}
     />
   );
 }

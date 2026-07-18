@@ -32,7 +32,6 @@ export type LocationRequestState = 'idle' | 'requesting' | 'granted' | 'failed';
 export interface LocationState {
   coords: Coordinates;
   source: LocationSource;
-  label: string;
   requestState: LocationRequestState;
   /** Motivo de la última falla (solo cuando requestState === 'failed'). */
   failureReason: LocationFailureReason | null;
@@ -94,7 +93,6 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     return {
       coords: usingGps ? gpsCoords : manualLocation.coords,
       source: usingGps ? 'gps' : 'manual',
-      label: usingGps ? 'Tu ubicación actual' : manualLocation.label,
       requestState,
       failureReason,
       manualLocation,

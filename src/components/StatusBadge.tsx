@@ -4,7 +4,8 @@ import { View } from 'react-native';
 
 import { AppText } from './AppText';
 import type { OpenStatus } from '../domain/openingHours';
-import { describeOpenStatus } from '../domain/openingHours';
+import { openStatusText } from '../i18n/format';
+import { useI18n } from '../i18n/I18nContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
 
@@ -20,34 +21,36 @@ export interface StatusBadgeProps {
  */
 export function StatusBadge({ status, compact = false }: StatusBadgeProps) {
   const { colors } = useAppTheme();
+  const { t, locale } = useI18n();
 
   const config = {
     open: {
       background: colors.successSoft,
       color: colors.success,
       icon: 'checkmark-circle' as const,
-      compactLabel: 'Abierto',
+      compactLabel: t('status.open'),
     },
     closed: {
       background: colors.neutralSoft,
       color: colors.textSecondary,
       icon: 'close-circle' as const,
-      compactLabel: 'Cerrado',
+      compactLabel: t('status.closed'),
     },
     unknown: {
       background: colors.warningSoft,
       color: colors.warning,
       icon: 'help-circle' as const,
-      compactLabel: 'Horario no confirmado',
+      compactLabel: t('status.unknown'),
     },
   }[status.state];
 
-  const label = compact ? config.compactLabel : describeOpenStatus(status);
+  const fullText = openStatusText(status, locale);
+  const label = compact ? config.compactLabel : fullText;
 
   return (
     <View
       accessible
-      accessibilityLabel={describeOpenStatus(status)}
+      accessibilityLabel={fullText}
       style={{
         flexDirection: 'row',
         alignItems: 'center',

@@ -1,0 +1,230 @@
+import type { TranslationCatalog } from './es';
+
+/** English catalog. Data (business names, streets, neighborhoods) is never translated. */
+export const en: TranslationCatalog = {
+  'common.back': 'Back',
+  'common.retry': 'Retry',
+  'common.backToApp': 'Back to Locavo',
+  'common.goHome': 'Go to Home',
+  'common.change': 'Change',
+  'common.loading': 'Loading',
+
+  'tabs.home': 'Home',
+  'tabs.explore': 'Explore',
+  'tabs.settings': 'Settings',
+
+  'home.heroTitle': 'What do you need right now?',
+  'home.tagline': "Don't search. Decide.",
+  'home.searchPlaceholder': 'Search tacos, coffee, pharmacy...',
+  'home.useMyLocation': 'Use my current location',
+  'home.gettingLocation': 'Getting location…',
+  'home.useMyLocationHint': 'Asks for location permission and reads your position once',
+  'home.recommendedNearYou': 'Recommended near you',
+  'home.explorePlaces': 'Explore places',
+  'home.explorePlacesHint': 'Opens the full list of places',
+  'home.demoNotice': 'Demo phase: the places shown are simulated data.',
+  'home.locationLine': 'Culiacán · {label} · Change',
+  'home.locationA11y': 'Location: Culiacán, {label}. Change location',
+  'home.themeToggleA11y': 'Change theme. Current: {mode}',
+
+  'location.current': 'Your current location',
+  'location.failure.denied':
+    'Location permission denied. We keep using {label} as reference; you can change the area in Settings.',
+  'location.failure.servicesOff':
+    'Device location is turned off. Enable it in the system or keep using {label}.',
+  'location.failure.timeout':
+    'Your location took too long to respond. We keep using {label}; you can try again.',
+  'location.failure.error': 'Your location is not available right now. We use {label} as reference.',
+
+  'category.food': 'Food',
+  'category.beer': 'Beer',
+  'category.coffee': 'Coffee',
+  'category.lodging': 'Lodging',
+  'category.pharmacy': 'Pharmacies',
+  'category.gas': 'Gas stations',
+  'category.store': 'Stores',
+  'category.nightlife': 'Nightlife',
+  'category.a11y': 'Category {label}',
+  'category.badgeA11y': 'Category: {label}',
+
+  'explore.allPlaces': 'All places',
+  'explore.locationLine': 'Culiacán · {label}',
+  'explore.openNow': 'Open now',
+  'explore.near': 'Nearby',
+  'explore.searchInCategory': 'Search in {category}…',
+  'explore.nearbyPlaces': 'Nearby places',
+  'explore.emptyTitle': 'No results',
+  'explore.emptyFiltered':
+    'Nothing open with those filters right now. Remove "Open now" or change category.',
+  'explore.emptyGeneric': 'Try another category or change your search.',
+  'explore.removeFilter': 'Remove filter',
+  'explore.seeAll': 'See all',
+
+  'status.open': 'Open',
+  'status.openUntil': 'Open until {time}',
+  'status.closed': 'Closed',
+  'status.unknown': 'Hours not confirmed',
+
+  'confidence.high': 'High confidence',
+  'confidence.medium': 'Recent information',
+  'confidence.low': 'Limited information',
+  'confidence.a11y': 'Information confidence: {label}',
+
+  'recommend.bestOption': 'BEST OPTION NOW',
+  'recommend.bestOptionA11y': 'Best option now: {name}',
+  'recommend.details': 'Details',
+  'recommend.detailsHint': 'Opens the place details',
+  'reason.OPEN_NOW': 'it is open',
+  'reason.NEARBY': 'it is nearby',
+  'reason.RECENTLY_VERIFIED': 'its information was verified recently',
+  'reason.HIGH_CONFIDENCE': 'its information is highly reliable',
+  'reason.COMPLETE_INFORMATION': 'its information is complete',
+  'reason.template': 'Recommended because {list}.',
+  'reason.and': ' and ',
+  'reason.separator': ', ',
+  'reason.fallback': 'It is the most convenient option among the available results.',
+
+  'place.directions': 'Directions',
+  'place.directionsHint': 'Opens Google Maps with the route to this place',
+  'place.address': 'Address',
+  'place.phone': 'Phone',
+  'place.website': 'Website',
+  'place.websiteA11y': 'Open {name} website',
+  'place.priceLevel': 'Price level',
+  'place.price.1': 'Budget-friendly',
+  'place.price.2': 'Moderate price',
+  'place.price.3': 'High price',
+  'place.price.4': 'Very high price',
+  'place.price.unknown': 'Price not available',
+  'place.source': 'Source',
+  'place.sourceDemo': 'Demo data (demo-seed)',
+  'place.lastVerification': 'Last verification',
+  'place.verifiedOn': 'Verified on {date}',
+  'place.verifiedUnknown': 'Verification date not available',
+  'place.cardA11y': '{name}, {category}',
+  'place.cardHint': 'Opens the place details',
+  'place.loading': 'Loading place…',
+  'place.notFoundTitle': 'Place not found',
+  'place.notFoundBody': 'This place is no longer available in the demo data.',
+  'place.navNote':
+    'Locavo records your intent to navigate; it does not confirm visits or purchases. The route opens in Google Maps.',
+
+  'navError.title': 'We could not open Google Maps for {name}.',
+  'navError.body': 'Check that a browser or the Google Maps app is available and try again.',
+  'navError.closeA11y': 'Dismiss notice',
+
+  'map.a11y': 'Results map',
+  'map.loading': 'Loading map…',
+  'map.failedTitle': 'We could not load the map.',
+  'map.failedBody': 'You can keep using the list of places.',
+  'map.retry': 'Retry map',
+  'map.yourLocation': 'Your location',
+
+  'state.loadingPlaces': 'Finding places near you…',
+  'state.errorTitle': 'Something went wrong',
+  'state.errorBody': 'We had a problem loading the places.',
+  'state.notFoundTitle': 'Screen not found',
+  'state.notFoundBody': 'The route you tried to open does not exist.',
+
+  'search.a11yLabel': 'Search places',
+  'search.a11yHint': 'Type what you need, for example tacos or pharmacy',
+  'search.clear': 'Clear search',
+
+  'settings.title': 'Settings',
+  'settings.theme': 'Theme',
+  'settings.theme.system': 'Follow system',
+  'settings.theme.light': 'Light mode',
+  'settings.theme.dark': 'Dark mode',
+  'settings.theme.systemShort': 'system',
+  'settings.theme.lightShort': 'light',
+  'settings.theme.darkShort': 'dark',
+  'settings.language': 'Language',
+  'settings.manualLocation': 'Manual location',
+  'settings.manualLocationBody':
+    'If you do not grant location permission, Locavo uses a reference area in Culiacán.',
+  'settings.privacy': 'Privacy',
+  'settings.privacyBody':
+    'Your location is read only when you ask for it and only to sort results; there is no background tracking, no route history, and nothing is sent to servers. Usage events stay on this device.',
+  'settings.demoData': 'Demo data',
+  'settings.demoDataBody':
+    'This is the Locavo demo phase: all places are simulated data with the “Demo” prefix. They do not represent verified real businesses.',
+  'settings.info': 'Information',
+  'settings.privacyLink': 'Privacy',
+  'settings.termsLink': 'Terms of use',
+  'settings.supportLink': 'Support',
+
+  'privacy.title': 'Privacy',
+  'privacy.intro': 'This is how Locavo handles your information during the current demo phase.',
+  'privacy.location.title': 'Location',
+  'privacy.location.body':
+    'Locavo requests your location only to show you nearby places and sort results. It is a one-time read: it happens only when you ask.',
+  'privacy.location.b1': 'No continuous tracking of your position.',
+  'privacy.location.b2': 'No background location.',
+  'privacy.location.b3': 'No route history is stored.',
+  'privacy.location.b4': 'Your location is never sent to any Locavo server.',
+  'privacy.location.b5':
+    'If you deny the permission, you can use a manual area in Culiacán and the app keeps working.',
+  'privacy.account.title': 'Account and personal data',
+  'privacy.account.body':
+    'Locavo does not require an account, registration or personal data in this phase.',
+  'privacy.analytics.title': 'Analytics',
+  'privacy.analytics.body':
+    'Analytics in this phase is demonstrative and stays only on your device. No external analytics service is connected and no coordinates are recorded in events.',
+  'privacy.data.title': 'Place data',
+  'privacy.data.body':
+    'The places currently shown are simulated demo data, identified with the “Demo” prefix. They do not represent verified real businesses.',
+  'privacy.external.title': 'External services',
+  'privacy.external.body1':
+    'When you request directions, Google Maps opens externally (app or browser) and applies its own privacy policy.',
+  'privacy.external.body2':
+    'The internal map uses tiles from external providers (OpenStreetMap), so loading them may require connecting to those servers.',
+  'legal.note': 'Initial product document. It will be reviewed before commercial release.',
+
+  'terms.title': 'Terms of use',
+  'terms.intro': 'Conditions of the current Locavo demo phase.',
+  'terms.demo.title': 'Demonstrative information',
+  'terms.demo.body1':
+    'The information shown in this phase is demonstrative: places are simulated data and do not represent verified real businesses.',
+  'terms.demo.body2':
+    'There is no commercial relationship yet between Locavo and the businesses shown in the app.',
+  'terms.approx.title': 'Approximations',
+  'terms.approx.body1':
+    'Hours, distances and travel times are approximate and may not reflect reality. No real-time traffic information is used.',
+  'terms.approx.body2': 'Before making important decisions, confirm the information directly with the place.',
+  'terms.nav.title': 'Navigation',
+  'terms.nav.body':
+    'Locavo does not provide its own turn-by-turn navigation. Requesting directions opens Google Maps, an external service with its own terms and conditions.',
+
+  'support.title': 'Support',
+  'support.intro': 'Quick answers to the most common questions in this demo phase.',
+  'support.enable.title': 'How do I enable my location?',
+  'support.enable.b1':
+    'On Home, tap "Use my current location" and accept the permission when the system asks.',
+  'support.enable.b2':
+    'If you denied it before, enable it in the system settings: find Locavo under Apps → Permissions → Location.',
+  'support.manual.title': "What if I don't want to share my location?",
+  'support.manual.body':
+    'You can use Locavo without location permission: in Settings choose a manual area of Culiacán and results will be sorted from there.',
+  'support.map.title': 'The map does not load',
+  'support.map.b1': 'Check your internet connection: map tiles need it.',
+  'support.map.b2': 'Use the "Retry map" button in the notice.',
+  'support.map.b3': 'Even if the map fails, the list, search and recommendation keep working.',
+  'support.maps.title': 'Google Maps does not open',
+  'support.maps.b1': 'Try again from the on-screen notice.',
+  'support.maps.b2':
+    'The link works even without the Google Maps app: it will open in the browser.',
+  'support.maps.b3': 'Check that a browser is enabled on your device.',
+  'support.pwa.title': 'How do I install Locavo as an app (PWA)?',
+  'support.pwa.b1': 'Open the Locavo web version in Chrome or Edge.',
+  'support.pwa.b2': 'On Android: tap the ⋮ menu and choose "Add to Home screen" or "Install app".',
+  'support.pwa.b3': 'On desktop: use the install icon in the address bar.',
+  'support.pwa.b4': 'On iPhone (Safari): Share button → "Add to Home Screen".',
+  'support.note': 'The official support contact channel will be published before launch.',
+
+  'format.months': 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec',
+  'format.date': '{month} {day}, {year}',
+  'format.distanceM': '{value} m away',
+  'format.distanceKm': '{value} km away',
+  'format.distanceMi': '{value} mi away',
+  'format.travelTime': 'About {min} min',
+};

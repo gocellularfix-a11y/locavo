@@ -3,25 +3,28 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { AppText } from './AppText';
-import { getCategoryMeta } from '../domain/categories';
+import { categoryLabelKey, getCategoryMeta } from '../domain/categories';
 import type { CategoryId } from '../domain/place';
+import { useI18n } from '../i18n/I18nContext';
 import { getCategoryVisual } from '../theme/categoryColors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
 
 /**
  * Etiqueta compacta de categoría con su color distintivo:
- * icono + nombre sobre fondo tintado. Acento funcional, no ruido.
+ * icono + nombre (localizado) sobre fondo tintado.
  */
 export function CategoryBadge({ category }: { category: CategoryId }) {
   const { scheme } = useAppTheme();
+  const { t } = useI18n();
   const meta = getCategoryMeta(category);
   const visual = getCategoryVisual(category, scheme);
+  const label = t(categoryLabelKey(category));
 
   return (
     <View
       accessible
-      accessibilityLabel={`Categoría: ${meta.label}`}
+      accessibilityLabel={t('category.badgeA11y', { label })}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -39,7 +42,7 @@ export function CategoryBadge({ category }: { category: CategoryId }) {
         color={visual.icon}
       />
       <AppText variant="label" color={visual.icon}>
-        {meta.label}
+        {label}
       </AppText>
     </View>
   );

@@ -1,0 +1,235 @@
+import type { TranslationCatalog } from './es';
+
+/** Deutscher Katalog. Daten (Firmennamen, Straßen, Viertel) werden nie übersetzt. */
+export const de: TranslationCatalog = {
+  'common.back': 'Zurück',
+  'common.retry': 'Erneut versuchen',
+  'common.backToApp': 'Zurück zu Locavo',
+  'common.goHome': 'Zur Startseite',
+  'common.change': 'Ändern',
+  'common.loading': 'Wird geladen',
+
+  'tabs.home': 'Start',
+  'tabs.explore': 'Entdecken',
+  'tabs.settings': 'Einstellungen',
+
+  'home.heroTitle': 'Was brauchst du gerade?',
+  'home.tagline': 'Nicht suchen. Entscheiden.',
+  'home.searchPlaceholder': 'Tacos, Kaffee, Apotheke suchen...',
+  'home.useMyLocation': 'Meinen aktuellen Standort verwenden',
+  'home.gettingLocation': 'Standort wird ermittelt…',
+  'home.useMyLocationHint': 'Fragt die Standortberechtigung an und liest deine Position einmalig',
+  'home.recommendedNearYou': 'Empfohlen in deiner Nähe',
+  'home.explorePlaces': 'Orte entdecken',
+  'home.explorePlacesHint': 'Öffnet die vollständige Liste der Orte',
+  'home.demoNotice': 'Demophase: Die angezeigten Orte sind simulierte Daten.',
+  'home.locationLine': 'Culiacán · {label} · Ändern',
+  'home.locationA11y': 'Standort: Culiacán, {label}. Standort ändern',
+  'home.themeToggleA11y': 'Design wechseln. Aktuell: {mode}',
+
+  'location.current': 'Dein aktueller Standort',
+  'location.failure.denied':
+    'Standortberechtigung abgelehnt. Wir verwenden weiterhin {label} als Referenz; die Zone kannst du in den Einstellungen ändern.',
+  'location.failure.servicesOff':
+    'Die Standortdienste des Geräts sind deaktiviert. Aktiviere sie im System oder nutze weiterhin {label}.',
+  'location.failure.timeout':
+    'Dein Standort hat zu lange gebraucht. Wir verwenden weiterhin {label}; du kannst es erneut versuchen.',
+  'location.failure.error':
+    'Dein Standort ist gerade nicht verfügbar. Wir verwenden {label} als Referenz.',
+
+  'category.food': 'Essen',
+  'category.beer': 'Bier',
+  'category.coffee': 'Kaffee',
+  'category.lodging': 'Unterkunft',
+  'category.pharmacy': 'Apotheken',
+  'category.gas': 'Tankstellen',
+  'category.store': 'Geschäfte',
+  'category.nightlife': 'Nachtleben',
+  'category.a11y': 'Kategorie {label}',
+  'category.badgeA11y': 'Kategorie: {label}',
+
+  'explore.allPlaces': 'Alle Orte',
+  'explore.locationLine': 'Culiacán · {label}',
+  'explore.openNow': 'Jetzt geöffnet',
+  'explore.near': 'In der Nähe',
+  'explore.searchInCategory': 'In {category} suchen…',
+  'explore.nearbyPlaces': 'Orte in der Nähe',
+  'explore.emptyTitle': 'Keine Ergebnisse',
+  'explore.emptyFiltered':
+    'Mit diesen Filtern ist gerade nichts geöffnet. Entferne „Jetzt geöffnet“ oder wechsle die Kategorie.',
+  'explore.emptyGeneric': 'Versuche eine andere Kategorie oder ändere deine Suche.',
+  'explore.removeFilter': 'Filter entfernen',
+  'explore.seeAll': 'Alle anzeigen',
+
+  'status.open': 'Geöffnet',
+  'status.openUntil': 'Geöffnet bis {time}',
+  'status.closed': 'Geschlossen',
+  'status.unknown': 'Öffnungszeiten nicht bestätigt',
+
+  'confidence.high': 'Hohe Verlässlichkeit',
+  'confidence.medium': 'Aktuelle Information',
+  'confidence.low': 'Begrenzte Information',
+  'confidence.a11y': 'Verlässlichkeit der Information: {label}',
+
+  'recommend.bestOption': 'BESTE OPTION JETZT',
+  'recommend.bestOptionA11y': 'Beste Option jetzt: {name}',
+  'recommend.details': 'Details',
+  'recommend.detailsHint': 'Öffnet die Details des Ortes',
+  'reason.OPEN_NOW': 'er ist geöffnet',
+  'reason.NEARBY': 'er ist in der Nähe',
+  'reason.RECENTLY_VERIFIED': 'seine Informationen wurden kürzlich überprüft',
+  'reason.HIGH_CONFIDENCE': 'seine Informationen sind sehr verlässlich',
+  'reason.COMPLETE_INFORMATION': 'seine Informationen sind vollständig',
+  'reason.template': 'Empfohlen, weil {list}.',
+  'reason.and': ' und ',
+  'reason.separator': ', ',
+  'reason.fallback': 'Dies ist die günstigste Option unter den verfügbaren Ergebnissen.',
+
+  'place.directions': 'Route',
+  'place.directionsHint': 'Öffnet Google Maps mit der Route zum Ort',
+  'place.address': 'Adresse',
+  'place.phone': 'Telefon',
+  'place.website': 'Website',
+  'place.websiteA11y': 'Website von {name} öffnen',
+  'place.priceLevel': 'Preisniveau',
+  'place.price.1': 'Günstig',
+  'place.price.2': 'Mittleres Preisniveau',
+  'place.price.3': 'Hohes Preisniveau',
+  'place.price.4': 'Sehr hohes Preisniveau',
+  'place.price.unknown': 'Preis nicht verfügbar',
+  'place.source': 'Quelle',
+  'place.sourceDemo': 'Demodaten (demo-seed)',
+  'place.lastVerification': 'Letzte Überprüfung',
+  'place.verifiedOn': 'Überprüft am {date}',
+  'place.verifiedUnknown': 'Überprüfungsdatum nicht verfügbar',
+  'place.cardA11y': '{name}, {category}',
+  'place.cardHint': 'Öffnet die Details des Ortes',
+  'place.loading': 'Ort wird geladen…',
+  'place.notFoundTitle': 'Ort nicht gefunden',
+  'place.notFoundBody': 'Dieser Ort ist in den Demodaten nicht mehr verfügbar.',
+  'place.navNote':
+    'Locavo speichert deine Navigationsabsicht; Besuche oder Käufe werden nicht bestätigt. Die Route öffnet sich in Google Maps.',
+
+  'navError.title': 'Google Maps konnte für {name} nicht geöffnet werden.',
+  'navError.body':
+    'Prüfe, ob ein Browser oder die Google-Maps-App verfügbar ist, und versuche es erneut.',
+  'navError.closeA11y': 'Hinweis schließen',
+
+  'map.a11y': 'Ergebniskarte',
+  'map.loading': 'Karte wird geladen…',
+  'map.failedTitle': 'Die Karte konnte nicht geladen werden.',
+  'map.failedBody': 'Du kannst die Liste der Orte weiter verwenden.',
+  'map.retry': 'Karte erneut laden',
+  'map.yourLocation': 'Dein Standort',
+
+  'state.loadingPlaces': 'Orte in deiner Nähe werden gesucht…',
+  'state.errorTitle': 'Es ist ein Problem aufgetreten',
+  'state.errorBody': 'Beim Laden der Orte ist etwas schiefgelaufen.',
+  'state.notFoundTitle': 'Seite nicht gefunden',
+  'state.notFoundBody': 'Die aufgerufene Route existiert nicht.',
+
+  'search.a11yLabel': 'Orte suchen',
+  'search.a11yHint': 'Gib ein, was du brauchst, zum Beispiel Tacos oder Apotheke',
+  'search.clear': 'Suche löschen',
+
+  'settings.title': 'Einstellungen',
+  'settings.theme': 'Design',
+  'settings.theme.system': 'System folgen',
+  'settings.theme.light': 'Heller Modus',
+  'settings.theme.dark': 'Dunkler Modus',
+  'settings.theme.systemShort': 'System',
+  'settings.theme.lightShort': 'hell',
+  'settings.theme.darkShort': 'dunkel',
+  'settings.language': 'Sprache',
+  'settings.manualLocation': 'Manueller Standort',
+  'settings.manualLocationBody':
+    'Ohne Standortberechtigung verwendet Locavo eine Referenzzone in Culiacán.',
+  'settings.privacy': 'Datenschutz',
+  'settings.privacyBody':
+    'Dein Standort wird nur auf Anfrage gelesen und nur zum Sortieren der Ergebnisse; kein Tracking im Hintergrund, kein Routenverlauf, nichts wird an Server gesendet. Nutzungsereignisse bleiben auf diesem Gerät.',
+  'settings.demoData': 'Demodaten',
+  'settings.demoDataBody':
+    'Dies ist die Demophase von Locavo: Alle Orte sind simulierte Daten mit dem Präfix „Demo“. Sie stellen keine überprüften realen Geschäfte dar.',
+  'settings.info': 'Informationen',
+  'settings.privacyLink': 'Datenschutz',
+  'settings.termsLink': 'Nutzungsbedingungen',
+  'settings.supportLink': 'Support',
+
+  'privacy.title': 'Datenschutz',
+  'privacy.intro': 'So behandelt Locavo deine Informationen in der aktuellen Demophase.',
+  'privacy.location.title': 'Standort',
+  'privacy.location.body':
+    'Locavo fragt deinen Standort nur an, um Orte in der Nähe zu zeigen und Ergebnisse zu sortieren. Die Abfrage ist einmalig: nur wenn du sie auslöst.',
+  'privacy.location.b1': 'Kein kontinuierliches Tracking deiner Position.',
+  'privacy.location.b2': 'Keine Standortermittlung im Hintergrund.',
+  'privacy.location.b3': 'Kein Routenverlauf wird gespeichert.',
+  'privacy.location.b4': 'Dein Standort wird nie an einen Locavo-Server gesendet.',
+  'privacy.location.b5':
+    'Wenn du die Berechtigung ablehnst, kannst du eine manuelle Zone in Culiacán verwenden und die App funktioniert weiter.',
+  'privacy.account.title': 'Konto und persönliche Daten',
+  'privacy.account.body':
+    'Locavo verlangt in dieser Phase kein Konto, keine Registrierung und keine persönlichen Daten.',
+  'privacy.analytics.title': 'Analyse',
+  'privacy.analytics.body':
+    'Die Analyse dieser Phase ist demonstrativ und bleibt nur auf deinem Gerät. Kein externer Dienst ist verbunden, keine Koordinaten werden erfasst.',
+  'privacy.data.title': 'Ortsdaten',
+  'privacy.data.body':
+    'Die aktuell gezeigten Orte sind simulierte Demodaten mit dem Präfix „Demo“. Sie stellen keine überprüften realen Geschäfte dar.',
+  'privacy.external.title': 'Externe Dienste',
+  'privacy.external.body1':
+    'Wenn du eine Route anforderst, öffnet sich Google Maps extern (App oder Browser) mit eigener Datenschutzerklärung.',
+  'privacy.external.body2':
+    'Die interne Karte verwendet Kacheln externer Anbieter (OpenStreetMap); zum Laden kann eine Verbindung zu deren Servern nötig sein.',
+  'legal.note': 'Erstes Produktdokument. Wird vor der kommerziellen Veröffentlichung überarbeitet.',
+
+  'terms.title': 'Nutzungsbedingungen',
+  'terms.intro': 'Bedingungen der aktuellen Demophase von Locavo.',
+  'terms.demo.title': 'Demonstrative Informationen',
+  'terms.demo.body1':
+    'Die in dieser Phase gezeigten Informationen sind demonstrativ: Die Orte sind simulierte Daten und stellen keine überprüften realen Geschäfte dar.',
+  'terms.demo.body2':
+    'Es besteht noch keine Geschäftsbeziehung zwischen Locavo und den gezeigten Geschäften.',
+  'terms.approx.title': 'Näherungswerte',
+  'terms.approx.body1':
+    'Öffnungszeiten, Entfernungen und Fahrzeiten sind Näherungswerte und können von der Realität abweichen. Keine Echtzeit-Verkehrsdaten.',
+  'terms.approx.body2':
+    'Bestätige wichtige Informationen direkt beim Ort, bevor du Entscheidungen triffst.',
+  'terms.nav.title': 'Navigation',
+  'terms.nav.body':
+    'Locavo bietet keine eigene Turn-by-Turn-Navigation. Routenanfragen öffnen Google Maps, einen externen Dienst mit eigenen Bedingungen.',
+
+  'support.title': 'Support',
+  'support.intro': 'Schnelle Antworten auf die häufigsten Fragen dieser Demophase.',
+  'support.enable.title': 'Wie aktiviere ich meinen Standort?',
+  'support.enable.b1':
+    'Tippe auf der Startseite auf „Meinen aktuellen Standort verwenden“ und akzeptiere die Berechtigung.',
+  'support.enable.b2':
+    'Wenn du sie zuvor abgelehnt hast, aktiviere sie in den Systemeinstellungen: Locavo unter Apps → Berechtigungen → Standort.',
+  'support.manual.title': 'Und wenn ich meinen Standort nicht teilen möchte?',
+  'support.manual.body':
+    'Du kannst Locavo ohne Standortberechtigung verwenden: Wähle in den Einstellungen eine manuelle Zone von Culiacán; die Ergebnisse werden von dort sortiert.',
+  'support.map.title': 'Die Karte lädt nicht',
+  'support.map.b1': 'Prüfe deine Internetverbindung: Die Kartenkacheln benötigen sie.',
+  'support.map.b2': 'Verwende die Schaltfläche „Karte erneut laden“ im Hinweis.',
+  'support.map.b3':
+    'Auch wenn die Karte fehlschlägt, funktionieren Liste, Suche und Empfehlung weiter.',
+  'support.maps.title': 'Google Maps öffnet sich nicht',
+  'support.maps.b1': 'Versuche es über den Hinweis auf dem Bildschirm erneut.',
+  'support.maps.b2':
+    'Der Link funktioniert auch ohne die Google-Maps-App: Er öffnet sich im Browser.',
+  'support.maps.b3': 'Prüfe, ob auf deinem Gerät ein Browser verfügbar ist.',
+  'support.pwa.title': 'Wie installiere ich Locavo als App (PWA)?',
+  'support.pwa.b1': 'Öffne die Webversion von Locavo in Chrome oder Edge.',
+  'support.pwa.b2':
+    'Auf Android: Menü ⋮ und „Zum Startbildschirm hinzufügen“ oder „App installieren“ wählen.',
+  'support.pwa.b3': 'Am Desktop: das Installationssymbol in der Adressleiste verwenden.',
+  'support.pwa.b4': 'Auf dem iPhone (Safari): Teilen-Taste → „Zum Home-Bildschirm“.',
+  'support.note': 'Der offizielle Support-Kontaktkanal wird vor dem Start veröffentlicht.',
+
+  'format.months': 'Jan|Feb|März|Apr|Mai|Juni|Juli|Aug|Sep|Okt|Nov|Dez',
+  'format.date': '{day}. {month} {year}',
+  'format.distanceM': '{value} m entfernt',
+  'format.distanceKm': '{value} km entfernt',
+  'format.distanceMi': '{value} mi entfernt',
+  'format.travelTime': 'Etwa {min} Min.',
+};

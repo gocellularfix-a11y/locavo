@@ -13,11 +13,12 @@ import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SearchField } from '../../components/SearchField';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
-import type { ScoredPlace } from '../../domain/recommendation';
+import { locationFailureText } from '../../i18n/format';
+import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { analytics } from '../../services/container';
-import { describeLocationFailure } from '../../services/location';
+import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme/tokens';
@@ -25,11 +26,16 @@ import { spacing } from '../../theme/tokens';
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, mode, setMode } = useAppTheme();
+  const { t, locale } = useI18n();
   const location = useLocationState();
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
 
   const { status, recommended } = usePlacesQuery();
+  const directions = useDirections();
+
+  const locationLabel =
+    location.source === 'gps' ? t('location.current') : location.manualLocation.label;
 
   const columns = width >= 720 ? 4 : 2;
   const rows = useMemo(() => {
@@ -65,7 +71,6 @@ export default function HomeScreen() {
     router.push({ pathname: '/explore', params: { category: category.id } });
   };
 
-  const directions = useDirections();
   const navigateTo = (scored: ScoredPlace) => {
     directions.navigateTo(scored.place);
   };
@@ -74,6 +79,12 @@ export default function HomeScreen() {
     setMode(mode === 'system' ? 'dark' : mode === 'dark' ? 'light' : 'system');
   };
   const themeIcon = mode === 'dark' ? 'moon' : mode === 'light' ? 'sunny' : 'contrast';
+  const themeModeShort =
+    mode === 'system'
+      ? t('settings.theme.systemShort')
+      : mode === 'dark'
+        ? t('settings.theme.darkShort')
+        : t('settings.theme.lightShort');
 
   return (
     <ScreenContainer>
@@ -85,21 +96,19 @@ export default function HomeScreen() {
             <Pressable
               onPress={() => router.push('/settings')}
               accessibilityRole="button"
-              accessibilityLabel={`Ubicación: Culiacán, ${location.label}. Cambiar ubicación`}
+              accessibilityLabel={t('home.locationA11y', { label: locationLabel })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
             >
               <Ionicons name="location" size={14} color={colors.brand} />
               <AppText variant="caption" tone="secondary">
-                Culiacán · {location.label} · Cambiar
+                {t('home.locationLine', { label: locationLabel })}
               </AppText>
             </Pressable>
           </View>
           <Pressable
             onPress={cycleTheme}
             accessibilityRole="button"
-            accessibilityLabel={`Cambiar tema. Actual: ${
-              mode === 'system' ? 'sistema' : mode === 'dark' ? 'oscuro' : 'claro'
-            }`}
+            accessibilityLabel={t('home.themeToggleA11y', { mode: themeModeShort })}
             hitSlop={8}
             style={({ pressed }) => ({
               width: 44,
@@ -119,10 +128,10 @@ export default function HomeScreen() {
         {/* Hero */}
         <View style={{ gap: spacing.xs }}>
           <AppText variant="display" accessibilityRole="header">
-            ¿Qué necesitas ahora?
+            {t('home.heroTitle')}
           </AppText>
           <AppText variant="bodyStrong" tone="brand">
-            No busques. Decide.
+            {t('home.tagline')}
           </AppText>
         </View>
 
@@ -135,8 +144,8 @@ export default function HomeScreen() {
             <AppButton
               label={
                 location.requestState === 'requesting'
-                  ? 'Obteniendo ubicación…'
-                  : 'Usar mi ubicación actual'
+                  ? t('home.gettingLocation')
+                  : t('home.useMyLocation')
               }
               variant="secondary"
               icon="locate"
@@ -144,7 +153,7 @@ export default function HomeScreen() {
               onPress={() => {
                 location.useCurrentLocation();
               }}
-              accessibilityHint="Pide permiso de ubicación y usa tu posición actual una sola vez"
+              accessibilityHint={t('home.useMyLocationHint')}
             />
             {location.requestState === 'failed' && location.failureReason ? (
               <AppText
@@ -153,7 +162,11 @@ export default function HomeScreen() {
                 accessibilityRole="alert"
                 accessibilityLiveRegion="polite"
               >
-                {describeLocationFailure(location.failureReason, location.manualLocation.label)}
+                {locationFailureText(
+                  location.failureReason,
+                  location.manualLocation.label,
+                  locale,
+                )}
               </AppText>
             ) : null}
           </View>
@@ -178,7 +191,7 @@ export default function HomeScreen() {
         {/* Recomendación inicial */}
         <View style={{ gap: spacing.md }}>
           <AppText variant="section" accessibilityRole="header">
-            Recomendado cerca de ti
+            {t('home.recommendedNearYou')}
           </AppText>
           {status === 'loading' ? <LoadingState /> : null}
           {status === 'ready' && recommended ? (
@@ -198,15 +211,15 @@ export default function HomeScreen() {
         </View>
 
         <AppButton
-          label="Explorar lugares"
+          label={t('home.explorePlaces')}
           variant="secondary"
           icon="compass"
           onPress={() => router.push('/explore')}
-          accessibilityHint="Abre la lista completa de lugares"
+          accessibilityHint={t('home.explorePlacesHint')}
         />
 
         <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>
-          Fase de demostración: los lugares mostrados son datos simulados.
+          {t('home.demoNotice')}
         </AppText>
       </View>
     </ScreenContainer>

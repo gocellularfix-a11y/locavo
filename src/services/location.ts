@@ -120,17 +120,5 @@ export async function readCurrentLocation(
   }
 }
 
-/** Mensaje humano (sin jerga técnica) para cada falla de ubicación. */
-export function describeLocationFailure(reason: LocationFailureReason, manualLabel: string): string {
-  switch (reason) {
-    case 'denied':
-      return `Permiso de ubicación rechazado. Seguimos usando ${manualLabel} como referencia; puedes cambiar la zona en Ajustes.`;
-    case 'services-off':
-      return `La ubicación del dispositivo está desactivada. Actívala en el sistema o sigue usando ${manualLabel}.`;
-    case 'timeout':
-      return `Tu ubicación tardó demasiado en responder. Seguimos usando ${manualLabel}; puedes intentarlo de nuevo.`;
-    case 'invalid':
-    case 'error':
-      return `Tu ubicación no está disponible ahora. Usamos ${manualLabel} como referencia.`;
-  }
-}
+// Nota V3: el mensaje humano de cada falla vive en i18n/format.ts
+// (locationFailureText) según el locale.

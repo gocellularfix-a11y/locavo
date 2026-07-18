@@ -5,6 +5,8 @@ import { Pressable, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { useI18n } from '../../i18n/I18nContext';
+import { LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
 import { MANUAL_LOCATIONS } from '../../services/location';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme, type ThemeMode } from '../../theme/ThemeContext';
@@ -45,17 +47,6 @@ function OptionRow({ label, selected, onPress }: OptionRowProps) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={{ gap: spacing.md }}>
-      <AppText variant="section" accessibilityRole="header">
-        {title}
-      </AppText>
-      {children}
-    </View>
-  );
-}
-
 function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
   const { colors } = useAppTheme();
   return (
@@ -81,25 +72,50 @@ function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ gap: spacing.md }}>
+      <AppText variant="section" accessibilityRole="header">
+        {title}
+      </AppText>
+      {children}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { mode, setMode } = useAppTheme();
+  const { t, locale, setLocale } = useI18n();
   const location = useLocationState();
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: 'Según el sistema' },
-    { value: 'light', label: 'Modo claro' },
-    { value: 'dark', label: 'Modo oscuro' },
+    { value: 'system', label: t('settings.theme.system') },
+    { value: 'light', label: t('settings.theme.light') },
+    { value: 'dark', label: t('settings.theme.dark') },
   ];
 
   return (
     <ScreenContainer>
       <View style={{ gap: spacing.xxxl }}>
         <AppText variant="title" accessibilityRole="header">
-          Ajustes
+          {t('settings.title')}
         </AppText>
 
-        <Section title="Tema">
+        <Section title={t('settings.language')}>
+          <View style={{ gap: spacing.sm }} accessibilityRole="radiogroup">
+            {SUPPORTED_LOCALES.map((supported) => (
+              <OptionRow
+                key={supported}
+                label={LOCALE_NAMES[supported]}
+                selected={locale === supported}
+                onPress={() => setLocale(supported)}
+              />
+            ))}
+          </View>
+        </Section>
+
+        <Section title={t('settings.theme')}>
           <View style={{ gap: spacing.sm }} accessibilityRole="radiogroup">
             {themeOptions.map((option) => (
               <OptionRow
@@ -112,9 +128,9 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
-        <Section title="Ubicación manual">
+        <Section title={t('settings.manualLocation')}>
           <AppText variant="body" tone="secondary">
-            Si no otorgas permiso de ubicación, Locavo usa una zona de referencia en Culiacán.
+            {t('settings.manualLocationBody')}
           </AppText>
           <View style={{ gap: spacing.sm }} accessibilityRole="radiogroup">
             {MANUAL_LOCATIONS.map((manual) => (
@@ -128,26 +144,23 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
-        <Section title="Privacidad">
+        <Section title={t('settings.privacy')}>
           <AppText variant="body" tone="secondary">
-            Tu ubicación se lee solo cuando lo pides y únicamente para ordenar resultados; no se
-            rastrea en segundo plano, no se guarda historial de recorridos y nada se envía a
-            servidores. Los eventos de uso se registran solo en este dispositivo.
+            {t('settings.privacyBody')}
           </AppText>
         </Section>
 
-        <Section title="Información">
+        <Section title={t('settings.info')}>
           <View style={{ gap: spacing.sm }}>
-            <LinkRow label="Privacidad" onPress={() => router.push('/privacy')} />
-            <LinkRow label="Términos de uso" onPress={() => router.push('/terms')} />
-            <LinkRow label="Soporte" onPress={() => router.push('/support')} />
+            <LinkRow label={t('settings.privacyLink')} onPress={() => router.push('/privacy')} />
+            <LinkRow label={t('settings.termsLink')} onPress={() => router.push('/terms')} />
+            <LinkRow label={t('settings.supportLink')} onPress={() => router.push('/support')} />
           </View>
         </Section>
 
-        <Section title="Datos de demostración">
+        <Section title={t('settings.demoData')}>
           <AppText variant="body" tone="secondary">
-            Esta es la Fase 1 de Locavo: todos los lugares son datos simulados con el prefijo
-            &ldquo;Demo&rdquo;. No representan negocios reales verificados.
+            {t('settings.demoDataBody')}
           </AppText>
         </Section>
       </View>

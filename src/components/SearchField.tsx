@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
+import { useI18n } from '../i18n/I18nContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { fontFamilies, radii, spacing, typography } from '../theme/tokens';
 
@@ -17,10 +18,11 @@ export function SearchField({
   value,
   onChangeText,
   onSubmit,
-  placeholder = 'Buscar tacos, café, farmacia...',
+  placeholder,
   autoFocus = false,
 }: SearchFieldProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
 
   return (
     <View
@@ -41,12 +43,12 @@ export function SearchField({
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('home.searchPlaceholder')}
         placeholderTextColor={colors.textMuted}
         returnKeyType="search"
         autoFocus={autoFocus}
-        accessibilityLabel="Buscar lugares"
-        accessibilityHint="Escribe qué necesitas, por ejemplo tacos o farmacia"
+        accessibilityLabel={t('search.a11yLabel')}
+        accessibilityHint={t('search.a11yHint')}
         style={{
           flex: 1,
           color: colors.textPrimary,
@@ -59,7 +61,7 @@ export function SearchField({
         <Pressable
           onPress={() => onChangeText('')}
           accessibilityRole="button"
-          accessibilityLabel="Limpiar búsqueda"
+          accessibilityLabel={t('search.clear')}
           hitSlop={8}
         >
           <Ionicons name="close-circle" size={20} color={colors.textMuted} />

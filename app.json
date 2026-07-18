@@ -47,7 +47,8 @@
           "locationWhenInUsePermission": "Locavo usa tu ubicación solo para ordenar lugares cercanos mientras usas la app. No hay rastreo en segundo plano.",
           "isAndroidBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

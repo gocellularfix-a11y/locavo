@@ -5,8 +5,13 @@ import { AppButton } from './AppButton';
 import { AppText } from './AppText';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
-import { formatDistance, formatTravelTime } from '../domain/distance';
-import { explainReasons, type ScoredPlace } from '../domain/recommendation';
+import {
+  explainReasonsLocalized,
+  formatDistanceLocalized,
+  formatTravelTimeLocalized,
+} from '../i18n/format';
+import { useI18n } from '../i18n/I18nContext';
+import type { ScoredPlace } from '../services/places/PlaceRankingService';
 import { useAppTheme } from '../theme/ThemeContext';
 import { cardShadow, radii, spacing } from '../theme/tokens';
 
@@ -19,12 +24,13 @@ export interface RecommendedPlaceCardProps {
 /** Tarjeta destacada "Mejor opción ahora" con acento lateral coral. */
 export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: RecommendedPlaceCardProps) {
   const { colors } = useAppTheme();
+  const { t, locale } = useI18n();
   const { place, distanceKm, travelMinutes, status, reasons } = scored;
 
   return (
     <View
       accessible
-      accessibilityLabel={`Mejor opción ahora: ${place.name}`}
+      accessibilityLabel={t('recommend.bestOptionA11y', { name: place.name })}
       style={[
         {
           borderRadius: radii.cardLarge,
@@ -40,7 +46,7 @@ export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: Recommen
       ]}
     >
       <AppText variant="label" tone="brand">
-        MEJOR OPCIÓN AHORA
+        {t('recommend.bestOption')}
       </AppText>
 
       <View style={{ gap: spacing.sm }}>
@@ -55,27 +61,28 @@ export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: Recommen
       >
         <StatusBadge status={status} />
         <AppText variant="bodyStrong" tone="secondary">
-          {formatDistance(distanceKm)} · {formatTravelTime(travelMinutes)}
+          {formatDistanceLocalized(distanceKm, locale)} ·{' '}
+          {formatTravelTimeLocalized(travelMinutes, locale)}
         </AppText>
       </View>
 
       <AppText variant="body" tone="secondary">
-        {explainReasons(reasons)}
+        {explainReasonsLocalized(reasons, locale)}
       </AppText>
 
       <View style={{ flexDirection: 'row', gap: spacing.md, flexWrap: 'wrap' }}>
         <AppButton
-          label="Cómo llegar"
+          label={t('place.directions')}
           icon="navigate"
           onPress={() => onNavigate(scored)}
-          accessibilityHint="Abre Google Maps con la ruta al lugar"
+          accessibilityHint={t('place.directionsHint')}
           style={{ flexGrow: 1 }}
         />
         <AppButton
-          label="Detalles"
+          label={t('recommend.details')}
           variant="secondary"
           onPress={() => onDetails(scored)}
-          accessibilityHint="Abre los detalles del lugar"
+          accessibilityHint={t('recommend.detailsHint')}
         />
       </View>
     </View>

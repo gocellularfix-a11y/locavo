@@ -1,0 +1,235 @@
+import type { TranslationCatalog } from './es';
+
+/** Catalogo italiano. I dati (nomi commerciali, vie, quartieri) non vengono mai tradotti. */
+export const it: TranslationCatalog = {
+  'common.back': 'Indietro',
+  'common.retry': 'Riprova',
+  'common.backToApp': 'Torna a Locavo',
+  'common.goHome': 'Vai alla home',
+  'common.change': 'Cambia',
+  'common.loading': 'Caricamento',
+
+  'tabs.home': 'Home',
+  'tabs.explore': 'Esplora',
+  'tabs.settings': 'Impostazioni',
+
+  'home.heroTitle': 'Di cosa hai bisogno adesso?',
+  'home.tagline': 'Non cercare. Decidi.',
+  'home.searchPlaceholder': 'Cerca tacos, caffè, farmacia...',
+  'home.useMyLocation': 'Usa la mia posizione attuale',
+  'home.gettingLocation': 'Rilevamento posizione…',
+  'home.useMyLocationHint': 'Chiede il permesso di localizzazione e legge la posizione una sola volta',
+  'home.recommendedNearYou': 'Consigliato vicino a te',
+  'home.explorePlaces': 'Esplora i luoghi',
+  'home.explorePlacesHint': "Apre l'elenco completo dei luoghi",
+  'home.demoNotice': 'Fase dimostrativa: i luoghi mostrati sono dati simulati.',
+  'home.locationLine': 'Culiacán · {label} · Cambia',
+  'home.locationA11y': 'Posizione: Culiacán, {label}. Cambia posizione',
+  'home.themeToggleA11y': 'Cambia tema. Attuale: {mode}',
+
+  'location.current': 'La tua posizione attuale',
+  'location.failure.denied':
+    'Permesso di localizzazione negato. Continuiamo a usare {label} come riferimento; puoi cambiare zona nelle Impostazioni.',
+  'location.failure.servicesOff':
+    'La localizzazione del dispositivo è disattivata. Attivala nel sistema o continua con {label}.',
+  'location.failure.timeout':
+    'La tua posizione ha impiegato troppo tempo. Continuiamo con {label}; puoi riprovare.',
+  'location.failure.error':
+    'La tua posizione non è disponibile al momento. Usiamo {label} come riferimento.',
+
+  'category.food': 'Cibo',
+  'category.beer': 'Birra',
+  'category.coffee': 'Caffè',
+  'category.lodging': 'Alloggio',
+  'category.pharmacy': 'Farmacie',
+  'category.gas': 'Distributori',
+  'category.store': 'Negozi',
+  'category.nightlife': 'Vita notturna',
+  'category.a11y': 'Categoria {label}',
+  'category.badgeA11y': 'Categoria: {label}',
+
+  'explore.allPlaces': 'Tutti i luoghi',
+  'explore.locationLine': 'Culiacán · {label}',
+  'explore.openNow': 'Aperto ora',
+  'explore.near': 'Vicino',
+  'explore.searchInCategory': 'Cerca in {category}…',
+  'explore.nearbyPlaces': 'Luoghi vicini',
+  'explore.emptyTitle': 'Nessun risultato',
+  'explore.emptyFiltered':
+    'Niente di aperto con questi filtri al momento. Togli "Aperto ora" o cambia categoria.',
+  'explore.emptyGeneric': "Prova un'altra categoria o cambia la ricerca.",
+  'explore.removeFilter': 'Rimuovi filtro',
+  'explore.seeAll': 'Vedi tutto',
+
+  'status.open': 'Aperto',
+  'status.openUntil': 'Aperto fino alle {time}',
+  'status.closed': 'Chiuso',
+  'status.unknown': 'Orario non confermato',
+
+  'confidence.high': 'Alta affidabilità',
+  'confidence.medium': 'Informazione recente',
+  'confidence.low': 'Informazione limitata',
+  'confidence.a11y': "Affidabilità dell'informazione: {label}",
+
+  'recommend.bestOption': 'MIGLIORE OPZIONE ADESSO',
+  'recommend.bestOptionA11y': 'Migliore opzione adesso: {name}',
+  'recommend.details': 'Dettagli',
+  'recommend.detailsHint': 'Apre i dettagli del luogo',
+  'reason.OPEN_NOW': 'è aperto',
+  'reason.NEARBY': 'è vicino',
+  'reason.RECENTLY_VERIFIED': 'le sue informazioni sono state verificate di recente',
+  'reason.HIGH_CONFIDENCE': 'le sue informazioni sono molto affidabili',
+  'reason.COMPLETE_INFORMATION': 'le sue informazioni sono complete',
+  'reason.template': 'Consigliato perché {list}.',
+  'reason.and': ' e ',
+  'reason.separator': ', ',
+  'reason.fallback': "È l'opzione più conveniente tra i risultati disponibili.",
+
+  'place.directions': 'Indicazioni',
+  'place.directionsHint': 'Apre Google Maps con il percorso verso il luogo',
+  'place.address': 'Indirizzo',
+  'place.phone': 'Telefono',
+  'place.website': 'Sito web',
+  'place.websiteA11y': 'Apri il sito di {name}',
+  'place.priceLevel': 'Fascia di prezzo',
+  'place.price.1': 'Prezzo economico',
+  'place.price.2': 'Prezzo medio',
+  'place.price.3': 'Prezzo alto',
+  'place.price.4': 'Prezzo molto alto',
+  'place.price.unknown': 'Prezzo non disponibile',
+  'place.source': 'Fonte',
+  'place.sourceDemo': 'Dati dimostrativi (demo-seed)',
+  'place.lastVerification': 'Ultima verifica',
+  'place.verifiedOn': 'Verificato il {date}',
+  'place.verifiedUnknown': 'Data di verifica non disponibile',
+  'place.cardA11y': '{name}, {category}',
+  'place.cardHint': 'Apre i dettagli del luogo',
+  'place.loading': 'Caricamento del luogo…',
+  'place.notFoundTitle': 'Luogo non trovato',
+  'place.notFoundBody': 'Questo luogo non è più disponibile nei dati dimostrativi.',
+  'place.navNote':
+    "Locavo registra la tua intenzione di navigare; non conferma visite né acquisti. Il percorso si apre in Google Maps.",
+
+  'navError.title': 'Non siamo riusciti ad aprire Google Maps per {name}.',
+  'navError.body':
+    "Verifica che sia disponibile un browser o l'app di Google Maps e riprova.",
+  'navError.closeA11y': 'Chiudi avviso',
+
+  'map.a11y': 'Mappa dei risultati',
+  'map.loading': 'Caricamento mappa…',
+  'map.failedTitle': 'Non siamo riusciti a caricare la mappa.',
+  'map.failedBody': "Puoi continuare a usare l'elenco dei luoghi.",
+  'map.retry': 'Riprova mappa',
+  'map.yourLocation': 'La tua posizione',
+
+  'state.loadingPlaces': 'Ricerca di luoghi vicino a te…',
+  'state.errorTitle': 'Si è verificato un problema',
+  'state.errorBody': 'Qualcosa è andato storto nel caricare i luoghi.',
+  'state.notFoundTitle': 'Schermata non trovata',
+  'state.notFoundBody': 'Il percorso che hai provato ad aprire non esiste.',
+
+  'search.a11yLabel': 'Cerca luoghi',
+  'search.a11yHint': 'Scrivi ciò di cui hai bisogno, per esempio tacos o farmacia',
+  'search.clear': 'Cancella ricerca',
+
+  'settings.title': 'Impostazioni',
+  'settings.theme': 'Tema',
+  'settings.theme.system': 'Segui il sistema',
+  'settings.theme.light': 'Modalità chiara',
+  'settings.theme.dark': 'Modalità scura',
+  'settings.theme.systemShort': 'sistema',
+  'settings.theme.lightShort': 'chiaro',
+  'settings.theme.darkShort': 'scuro',
+  'settings.language': 'Lingua',
+  'settings.manualLocation': 'Posizione manuale',
+  'settings.manualLocationBody':
+    'Se non concedi il permesso di localizzazione, Locavo usa una zona di riferimento a Culiacán.',
+  'settings.privacy': 'Privacy',
+  'settings.privacyBody':
+    'La tua posizione viene letta solo quando lo chiedi e solo per ordinare i risultati; nessun tracciamento in background, nessuna cronologia dei percorsi e nulla viene inviato a server. Gli eventi di utilizzo restano su questo dispositivo.',
+  'settings.demoData': 'Dati dimostrativi',
+  'settings.demoDataBody':
+    'Questa è la fase dimostrativa di Locavo: tutti i luoghi sono dati simulati con il prefisso “Demo”. Non rappresentano attività reali verificate.',
+  'settings.info': 'Informazioni',
+  'settings.privacyLink': 'Privacy',
+  'settings.termsLink': "Termini d'uso",
+  'settings.supportLink': 'Assistenza',
+
+  'privacy.title': 'Privacy',
+  'privacy.intro': 'Ecco come Locavo gestisce le tue informazioni nella fase dimostrativa attuale.',
+  'privacy.location.title': 'Posizione',
+  'privacy.location.body':
+    'Locavo richiede la tua posizione solo per mostrarti luoghi vicini e ordinare i risultati. La lettura è puntuale: avviene solo quando la chiedi.',
+  'privacy.location.b1': 'Nessun tracciamento continuo della tua posizione.',
+  'privacy.location.b2': 'Nessuna localizzazione in background.',
+  'privacy.location.b3': 'Nessuna cronologia dei percorsi.',
+  'privacy.location.b4': 'La tua posizione non viene mai inviata a un server Locavo.',
+  'privacy.location.b5':
+    "Se neghi il permesso, puoi usare una zona manuale di Culiacán e l'app continua a funzionare.",
+  'privacy.account.title': 'Account e dati personali',
+  'privacy.account.body':
+    'Locavo non richiede account, registrazione né dati personali in questa fase.',
+  'privacy.analytics.title': 'Analitica',
+  'privacy.analytics.body':
+    'L\'analitica di questa fase è dimostrativa e resta solo sul tuo dispositivo. Nessun servizio esterno è collegato e nessuna coordinata viene registrata negli eventi.',
+  'privacy.data.title': 'Dati dei luoghi',
+  'privacy.data.body':
+    'I luoghi mostrati attualmente sono dati simulati dimostrativi, identificati con il prefisso “Demo”. Non rappresentano attività reali verificate.',
+  'privacy.external.title': 'Servizi esterni',
+  'privacy.external.body1':
+    'Quando chiedi indicazioni, Google Maps si apre esternamente (app o browser) e applica la propria informativa sulla privacy.',
+  'privacy.external.body2':
+    'La mappa interna usa tessere di fornitori esterni (OpenStreetMap); caricarle può richiedere la connessione a quei server.',
+  'legal.note': 'Documento iniziale di prodotto. Sarà rivisto prima della pubblicazione commerciale.',
+
+  'terms.title': "Termini d'uso",
+  'terms.intro': 'Condizioni della fase dimostrativa attuale di Locavo.',
+  'terms.demo.title': 'Informazione dimostrativa',
+  'terms.demo.body1':
+    'Le informazioni mostrate in questa fase sono dimostrative: i luoghi sono dati simulati e non rappresentano attività reali verificate.',
+  'terms.demo.body2':
+    'Non esiste ancora una relazione commerciale tra Locavo e le attività mostrate.',
+  'terms.approx.title': 'Approssimazioni',
+  'terms.approx.body1':
+    'Orari, distanze e tempi di viaggio sono approssimativi e potrebbero non riflettere la realtà. Nessuna informazione sul traffico in tempo reale.',
+  'terms.approx.body2':
+    'Prima di decisioni importanti, conferma le informazioni direttamente con il luogo.',
+  'terms.nav.title': 'Navigazione',
+  'terms.nav.body':
+    'Locavo non offre una propria navigazione passo-passo. Chiedere indicazioni apre Google Maps, un servizio esterno con i propri termini.',
+
+  'support.title': 'Assistenza',
+  'support.intro': 'Risposte rapide alle domande più comuni di questa fase dimostrativa.',
+  'support.enable.title': 'Come attivo la mia posizione?',
+  'support.enable.b1':
+    'Nella Home, tocca "Usa la mia posizione attuale" e accetta il permesso quando il sistema lo chiede.',
+  'support.enable.b2':
+    'Se lo hai negato in passato, attivalo dalle impostazioni di sistema: Locavo in App → Autorizzazioni → Posizione.',
+  'support.manual.title': 'E se non voglio condividere la mia posizione?',
+  'support.manual.body':
+    'Puoi usare Locavo senza permesso di localizzazione: nelle Impostazioni scegli una zona manuale di Culiacán e i risultati saranno ordinati da lì.',
+  'support.map.title': 'La mappa non si carica',
+  'support.map.b1': 'Controlla la connessione a internet: le tessere della mappa ne hanno bisogno.',
+  'support.map.b2': 'Usa il pulsante "Riprova mappa" dell\'avviso.',
+  'support.map.b3':
+    "Anche se la mappa fallisce, l'elenco, la ricerca e il consiglio continuano a funzionare.",
+  'support.maps.title': 'Google Maps non si apre',
+  'support.maps.b1': "Riprova dall'avviso sullo schermo.",
+  'support.maps.b2':
+    "Il link funziona anche senza l'app di Google Maps: si aprirà nel browser.",
+  'support.maps.b3': 'Verifica che sul dispositivo sia disponibile un browser.',
+  'support.pwa.title': 'Come installo Locavo come applicazione (PWA)?',
+  'support.pwa.b1': 'Apri la versione web di Locavo in Chrome o Edge.',
+  'support.pwa.b2':
+    'Su Android: menu ⋮ e scegli "Aggiungi a schermata Home" o "Installa app".',
+  'support.pwa.b3': "Su desktop: usa l'icona di installazione nella barra degli indirizzi.",
+  'support.pwa.b4': 'Su iPhone (Safari): pulsante Condividi → "Aggiungi a Home".',
+  'support.note': 'Il canale ufficiale di contatto sarà pubblicato prima del lancio.',
+
+  'format.months': 'gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic',
+  'format.date': '{day} {month} {year}',
+  'format.distanceM': 'A {value} m',
+  'format.distanceKm': 'A {value} km',
+  'format.distanceMi': 'A {value} mi',
+  'format.travelTime': 'Circa {min} min',
+};

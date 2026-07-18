@@ -35,6 +35,25 @@ reintento del mapa, manejo de errores al abrir Google Maps, validación de
 mensajes del WebView, persistencia tolerante a datos corruptos y scripts de
 prueba en dispositivo.
 
+La V2 añadió el sistema de color por categoría. La **V3 (Data Foundation)**
+añadió:
+
+- **Internacionalización fundacional**: 7 idiomas (español, English,
+  Português, Français, Italiano, Deutsch, 中文简体) con catálogos tipados
+  empaquetados (funcionan offline), selector en Ajustes, detección del
+  idioma del dispositivo, formato local (12/24 h, km/millas, fechas) y
+  búsqueda multilenguaje por alias ("beer", "cerveza" y "啤酒" encuentran
+  lo mismo). Los datos (nombres comerciales, calles, colonias) nunca se
+  traducen.
+- **Arquitectura de lugares neutral al proveedor**: modelo canónico
+  `LocavoPlace` con identidad propia, procedencia y confianza;
+  `PlaceSearchService` → `PlaceRepository` → `LocalPlaceRepository`;
+  normalizador de categorías (SCIAN/OSM/nombre), servicio de deduplicación,
+  esqueletos de proveedores DENUE/OSM (no conectados), feature flags con
+  defaults seguros y telemetría local de consultas. Sin Google Places.
+  Ver [docs/LOCAVO_DATA_ARCHITECTURE.md](docs/LOCAVO_DATA_ARCHITECTURE.md)
+  y [docs/DATA_SOURCE_POLICY.md](docs/DATA_SOURCE_POLICY.md).
+
 **Estado: TECHNICALLY READY — OWNER DEVICE ACCEPTANCE PENDING.** Todas las
 validaciones automáticas están en verde, pero la aceptación final requiere la
 prueba física del propietario siguiendo

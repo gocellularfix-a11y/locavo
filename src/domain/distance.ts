@@ -43,14 +43,5 @@ export function estimateTravelMinutes(distanceKm: number): number {
   return Math.max(1, Math.round(1 + (distanceKm / 22) * 60));
 }
 
-/** 'A 350 m' para menos de 1 km, 'A 1.4 km' en adelante. */
-export function formatDistance(distanceKm: number): string {
-  if (distanceKm < 1) {
-    return `A ${Math.max(10, Math.round(distanceKm * 100) * 10)} m`;
-  }
-  return `A ${distanceKm.toFixed(1)} km`;
-}
-
-export function formatTravelTime(minutes: number): string {
-  return `Aprox. ${minutes} min`;
-}
+// Nota V3: el formato visible de distancia/tiempo vive en i18n/format.ts
+// (formatDistanceLocalized, formatTravelTimeLocalized) según el locale.

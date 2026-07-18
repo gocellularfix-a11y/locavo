@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { AppText } from './AppText';
+import { useI18n } from '../i18n/I18nContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing } from '../theme/tokens';
 
@@ -23,12 +24,13 @@ function CenteredBox({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function LoadingState({ message = 'Buscando lugares cerca de ti…' }: { message?: string }) {
+export function LoadingState({ message }: { message?: string }) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   return (
     <CenteredBox>
-      <ActivityIndicator size="large" color={colors.brand} accessibilityLabel="Cargando" />
-      <AppText tone="secondary">{message}</AppText>
+      <ActivityIndicator size="large" color={colors.brand} accessibilityLabel={t('common.loading')} />
+      <AppText tone="secondary">{message ?? t('state.loadingPlaces')}</AppText>
     </CenteredBox>
   );
 }
@@ -40,19 +42,15 @@ export interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({
-  title = 'Sin resultados por aquí',
-  message = 'Prueba con otra categoría o cambia tu búsqueda.',
-  actionLabel,
-  onAction,
-}: EmptyStateProps) {
+export function EmptyState({ title, message, actionLabel, onAction }: EmptyStateProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   return (
     <CenteredBox>
       <Ionicons name="compass-outline" size={40} color={colors.textMuted} />
-      <AppText variant="cardTitle">{title}</AppText>
+      <AppText variant="cardTitle">{title ?? t('explore.emptyTitle')}</AppText>
       <AppText tone="secondary" style={{ textAlign: 'center' }}>
-        {message}
+        {message ?? t('explore.emptyGeneric')}
       </AppText>
       {actionLabel && onAction ? (
         <AppButton label={actionLabel} variant="secondary" onPress={onAction} />
@@ -66,19 +64,17 @@ export interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-export function ErrorState({
-  message = 'Algo salió mal al cargar los lugares.',
-  onRetry,
-}: ErrorStateProps) {
+export function ErrorState({ message, onRetry }: ErrorStateProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   return (
     <CenteredBox>
       <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
-      <AppText variant="cardTitle">Ocurrió un problema</AppText>
+      <AppText variant="cardTitle">{t('state.errorTitle')}</AppText>
       <AppText tone="secondary" style={{ textAlign: 'center' }}>
-        {message}
+        {message ?? t('state.errorBody')}
       </AppText>
-      {onRetry ? <AppButton label="Reintentar" onPress={onRetry} /> : null}
+      {onRetry ? <AppButton label={t('common.retry')} onPress={onRetry} /> : null}
     </CenteredBox>
   );
 }

@@ -13,7 +13,13 @@ export type AnalyticsEventName =
   | 'place_opened'
   | 'navigation_requested'
   | 'category_selected'
-  | 'search_submitted';
+  | 'search_submitted'
+  | 'place_search_started'
+  | 'place_search_completed'
+  | 'place_search_empty'
+  | 'directions_opened'
+  | 'repository_error'
+  | 'provider_error';
 
 export interface AnalyticsEvent {
   eventId: string;

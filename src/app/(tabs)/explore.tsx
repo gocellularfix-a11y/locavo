@@ -10,13 +10,14 @@ import { PlaceCard } from '../../components/PlaceCard';
 import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SearchField } from '../../components/SearchField';
-import { CATEGORIES, getCategoryMeta, isCategoryId } from '../../domain/categories';
+import { CATEGORIES, categoryLabelKey, isCategoryId } from '../../domain/categories';
 import type { CategoryId } from '../../domain/place';
-import type { ScoredPlace } from '../../domain/recommendation';
 import { MapSurface } from '../../features/map/MapSurface';
+import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { analytics } from '../../services/container';
+import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { getCategoryVisual } from '../../theme/categoryColors';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -63,6 +64,7 @@ function FilterChip({ label, active, onPress, activeColor, activeTextColor }: Fi
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors, scheme } = useAppTheme();
+  const { t } = useI18n();
   const location = useLocationState();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ category?: string; q?: string }>();
@@ -116,14 +118,16 @@ export default function ExploreScreen() {
     () =>
       results.map((r) => ({
         id: r.place.id,
-        latitude: r.place.latitude,
-        longitude: r.place.longitude,
+        latitude: r.place.coordinates.latitude,
+        longitude: r.place.coordinates.longitude,
         label: r.place.name,
       })),
     [results],
   );
 
-  const categoryLabel = category ? getCategoryMeta(category).label : 'Todos los lugares';
+  const locationLabel =
+    location.source === 'gps' ? t('location.current') : location.manualLocation.label;
+  const categoryLabel = category ? t(categoryLabelKey(category)) : t('explore.allPlaces');
   const isWide = width >= 900;
 
   const directions = useDirections();
@@ -146,7 +150,7 @@ export default function ExploreScreen() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.push('/'))}
           accessibilityRole="button"
-          accessibilityLabel="Volver"
+          accessibilityLabel={t('common.back')}
           hitSlop={8}
           style={({ pressed }) => ({
             width: 44,
@@ -166,7 +170,7 @@ export default function ExploreScreen() {
             {categoryLabel}
           </AppText>
           <AppText variant="caption" tone="secondary">
-            Culiacán · {location.label}
+            {t('explore.locationLine', { label: locationLabel })}
           </AppText>
         </View>
       </View>
@@ -182,7 +186,11 @@ export default function ExploreScreen() {
             });
           }
         }}
-        placeholder={category ? `Buscar en ${categoryLabel.toLowerCase()}…` : undefined}
+        placeholder={
+          category
+            ? t('explore.searchInCategory', { category: categoryLabel.toLowerCase() })
+            : undefined
+        }
       />
 
       <ScrollView
@@ -191,12 +199,12 @@ export default function ExploreScreen() {
         contentContainerStyle={{ gap: spacing.sm }}
       >
         <FilterChip
-          label="Abierto ahora"
+          label={t('explore.openNow')}
           active={openOnly}
           onPress={() => setOpenOnly((v) => !v)}
         />
         <FilterChip
-          label="Cerca"
+          label={t('explore.near')}
           active={sortByDistance}
           onPress={() => setSortByDistance((v) => !v)}
         />
@@ -205,7 +213,7 @@ export default function ExploreScreen() {
           return (
             <FilterChip
               key={c.id}
-              label={c.label}
+              label={t(categoryLabelKey(c.id))}
               active={category === c.id}
               activeColor={visual.solid}
               activeTextColor={visual.onSolid}
@@ -237,7 +245,7 @@ export default function ExploreScreen() {
   const listBlock = (
     <View style={{ gap: spacing.md }}>
       <AppText variant="section" accessibilityRole="header">
-        Lugares cercanos
+        {t('explore.nearbyPlaces')}
       </AppText>
       {results.slice(recommended ? 1 : 0).map((scored) => (
         <PlaceCard
@@ -261,13 +269,9 @@ export default function ExploreScreen() {
   } else if (results.length === 0) {
     body = (
       <EmptyState
-        title="Sin resultados"
-        message={
-          openOnly
-            ? 'Nada abierto con esos filtros ahora mismo. Quita "Abierto ahora" o cambia de categoría.'
-            : 'Prueba con otra categoría o cambia tu búsqueda.'
-        }
-        actionLabel={openOnly ? 'Quitar filtro' : 'Ver todo'}
+        title={t('explore.emptyTitle')}
+        message={openOnly ? t('explore.emptyFiltered') : t('explore.emptyGeneric')}
+        actionLabel={openOnly ? t('explore.removeFilter') : t('explore.seeAll')}
         onAction={() => {
           setOpenOnly(false);
           setCategory(null);

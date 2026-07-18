@@ -1,4 +1,5 @@
-import type { DayHours, OpeningHours, Place, TimeInterval } from '../domain/place';
+import type { DayHours, OpeningHours, TimeInterval } from '../domain/place';
+import type { LegacySeedPlace } from './places/PlaceMapper';
 
 /**
  * Datos SIMULADOS de demostración para la Fase 1.
@@ -30,7 +31,7 @@ function weekly(...days: DayHours[]): OpeningHours {
   return { weekly: days };
 }
 
-export const MOCK_PLACES: Place[] = [
+export const MOCK_PLACES: LegacySeedPlace[] = [
   // ── Comida ────────────────────────────────────────────────────────────
   {
     id: 'food-centro-01',

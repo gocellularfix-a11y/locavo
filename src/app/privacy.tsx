@@ -1,53 +1,44 @@
 import React from 'react';
 
 import { LegalPage } from '../components/LegalPage';
+import { useI18n } from '../i18n/I18nContext';
 
 export default function PrivacyScreen() {
+  const { t } = useI18n();
   return (
     <LegalPage
-      title="Privacidad"
-      intro="Así maneja Locavo tu información en la fase actual de demostración (Fase 1)."
+      title={t('privacy.title')}
+      intro={t('privacy.intro')}
       sections={[
         {
-          heading: 'Ubicación',
-          paragraphs: [
-            'Locavo solicita tu ubicación únicamente para mostrarte lugares cercanos y ordenar los resultados. La lectura es puntual: ocurre solo cuando tú la pides.',
-          ],
+          heading: t('privacy.location.title'),
+          paragraphs: [t('privacy.location.body')],
           bullets: [
-            'No hay seguimiento continuo de tu posición.',
-            'No se usa ubicación en segundo plano.',
-            'No se guarda historial de recorridos.',
-            'Tu ubicación no se envía a ningún servidor de Locavo.',
-            'Si rechazas el permiso, puedes usar una zona manual de Culiacán y la app sigue funcionando.',
+            t('privacy.location.b1'),
+            t('privacy.location.b2'),
+            t('privacy.location.b3'),
+            t('privacy.location.b4'),
+            t('privacy.location.b5'),
           ],
         },
         {
-          heading: 'Cuenta y datos personales',
-          paragraphs: [
-            'Locavo no requiere cuenta, registro ni datos personales para usarse en esta fase.',
-          ],
+          heading: t('privacy.account.title'),
+          paragraphs: [t('privacy.account.body')],
         },
         {
-          heading: 'Analítica',
-          paragraphs: [
-            'La analítica de esta fase es demostrativa y permanece únicamente en tu dispositivo (por ejemplo, qué categoría se seleccionó). No se conecta ningún servicio externo de analítica y no se registran coordenadas en los eventos.',
-          ],
+          heading: t('privacy.analytics.title'),
+          paragraphs: [t('privacy.analytics.body')],
         },
         {
-          heading: 'Datos de lugares',
-          paragraphs: [
-            'Los lugares mostrados actualmente son datos simulados de demostración, identificados con el prefijo "Demo". No representan negocios reales verificados.',
-          ],
+          heading: t('privacy.data.title'),
+          paragraphs: [t('privacy.data.body')],
         },
         {
-          heading: 'Servicios externos',
-          paragraphs: [
-            'Cuando pides indicaciones, Google Maps se abre externamente (app o navegador) y aplica su propia política de privacidad.',
-            'El mapa interno usa teselas de proveedores externos (OpenStreetMap), por lo que cargarlas puede requerir conexión con esos servidores.',
-          ],
+          heading: t('privacy.external.title'),
+          paragraphs: [t('privacy.external.body1'), t('privacy.external.body2')],
         },
       ]}
-      note="Documento inicial de producto. Será revisado antes de la publicación comercial."
+      note={t('legal.note')}
     />
   );
 }

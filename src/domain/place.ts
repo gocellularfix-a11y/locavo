@@ -1,9 +1,9 @@
 /**
- * Modelo de dominio central de Locavo.
+ * Primitivas compartidas del dominio.
  *
- * Un `Place` es un lugar de Culiacán con la información mínima necesaria
- * para decidir: dónde está, si está abierto, qué tan confiable es su
- * información y cómo contactarlo.
+ * El modelo canónico de lugar vive en `domain/places/LocavoPlace.ts` (V3).
+ * Aquí quedan los tipos transversales que usan horarios, distancia,
+ * categorías y ubicación.
  */
 
 export type CategoryId =
@@ -42,35 +42,7 @@ export interface OpeningHours {
   weekly: DayHours[];
 }
 
-/** Nivel de precio aproximado: 1 = económico, 3 = alto. */
-export type PriceLevel = 1 | 2 | 3;
-
-export type ConfidenceLevel = 'high' | 'medium' | 'low';
-
 export interface Coordinates {
   latitude: number;
   longitude: number;
-}
-
-export interface Place {
-  id: string;
-  name: string;
-  category: CategoryId;
-  latitude: number;
-  longitude: number;
-  address: string;
-  /** `null` cuando el horario completo se desconoce. */
-  openingHours: OpeningHours | null;
-  phone: string | null;
-  website: string | null;
-  priceLevel: PriceLevel | null;
-  /** Origen del dato. En Fase 1 siempre `demo-seed`. */
-  source: string;
-  /** Fecha ISO (UTC) de la última verificación del dato. */
-  lastVerifiedAt: string;
-  confidence: ConfidenceLevel;
-  /** Palabras clave adicionales para búsqueda local. */
-  keywords: string[];
-  /** Marca explícita de dato de demostración (Fase 1). */
-  isDemo: boolean;
 }

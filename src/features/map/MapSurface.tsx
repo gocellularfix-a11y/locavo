@@ -9,6 +9,7 @@ import { sanitizeMarkers, safeCenter, safeUserLocation } from './markers';
 import { parseMapMessage } from './messages';
 import { DEFAULT_MAP_HEIGHT, type MapSurfaceProps, type MapUpdatePayload } from './types';
 import { LoadingState } from '../../components/FeedbackStates';
+import { useI18n } from '../../i18n/I18nContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii } from '../../theme/tokens';
 
@@ -31,6 +32,7 @@ export function MapSurface({
   height = DEFAULT_MAP_HEIGHT,
 }: MapSurfaceProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   const webviewRef = useRef<WebView>(null);
   const [status, setStatus] = useState<MapStatus>('loading');
   const [attempt, setAttempt] = useState(0);
@@ -46,8 +48,9 @@ export function MapSurface({
         markerSelected: colors.accent,
         user: colors.success,
       },
+      userLabel: t('map.yourLocation'),
     }),
-    [center, markers, selectedId, userLocation, colors],
+    [center, markers, selectedId, userLocation, colors, t],
   );
 
   // El HTML inicial se genera por intento; las actualizaciones van por script
@@ -107,7 +110,7 @@ export function MapSurface({
   return (
     <View
       accessible
-      accessibilityLabel="Mapa de resultados"
+      accessibilityLabel={t('map.a11y')}
       style={{
         height,
         borderRadius: radii.card,
@@ -143,7 +146,7 @@ export function MapSurface({
             backgroundColor: colors.mapOverlay,
           }}
         >
-          <LoadingState message="Cargando mapa…" />
+          <LoadingState message={t('map.loading')} />
         </View>
       ) : null}
     </View>

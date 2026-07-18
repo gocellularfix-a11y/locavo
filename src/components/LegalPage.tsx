@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppText } from './AppText';
 import { ScreenContainer } from './ScreenContainer';
+import { useI18n } from '../i18n/I18nContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing } from '../theme/tokens';
 
@@ -29,6 +30,7 @@ export interface LegalPageProps {
 export function LegalPage({ title, intro, sections, note }: LegalPageProps) {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { t } = useI18n();
 
   return (
     <ScreenContainer contentStyle={{ maxWidth: 760 }}>
@@ -36,7 +38,7 @@ export function LegalPage({ title, intro, sections, note }: LegalPageProps) {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.push('/'))}
           accessibilityRole="button"
-          accessibilityLabel="Volver a Locavo"
+          accessibilityLabel={t('common.backToApp')}
           hitSlop={8}
           style={({ pressed }) => ({
             flexDirection: 'row',
@@ -50,7 +52,7 @@ export function LegalPage({ title, intro, sections, note }: LegalPageProps) {
         >
           <Ionicons name="arrow-back" size={20} color={colors.brand} />
           <AppText variant="bodyStrong" tone="brand">
-            Volver a Locavo
+            {t('common.backToApp')}
           </AppText>
         </Pressable>
 

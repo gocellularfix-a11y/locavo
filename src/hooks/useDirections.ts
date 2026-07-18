@@ -1,25 +1,34 @@
 import { useCallback, useState } from 'react';
 
-import type { Place } from '../domain/place';
+import type { LocavoPlace } from '../domain/places/LocavoPlace';
 import { analytics, navigationProvider } from '../services/container';
 
 /**
  * Flujo compartido de "Cómo llegar":
- * 1. Registra el evento local `navigation_requested` (intención, no visita).
- * 2. Abre el enlace universal de Google Maps.
+ * 1. Registra localmente la intención (`navigation_requested`, contrato
+ *    Fase 1) y la apertura (`directions_opened`, contrato V3). Nunca una
+ *    visita confirmada; sin coordenadas del usuario.
+ * 2. Abre el enlace universal de Google Maps (sin API key ni Places).
  * 3. Si el sistema no puede abrirlo, expone el fallo para mostrar un aviso
  *    con reintento (la app nunca truena por esto).
  */
 export function useDirections() {
-  const [failedPlace, setFailedPlace] = useState<Place | null>(null);
+  const [failedPlace, setFailedPlace] = useState<LocavoPlace | null>(null);
 
-  const navigateTo = useCallback(async (place: Place) => {
+  const navigateTo = useCallback(async (place: LocavoPlace) => {
     analytics.track({
       eventName: 'navigation_requested',
       navigationProvider: navigationProvider.id,
       placeId: place.id,
     });
-    const opened = await navigationProvider.openDirections(place);
+    const opened = await navigationProvider.openDirections(place.coordinates);
+    if (opened) {
+      analytics.track({
+        eventName: 'directions_opened',
+        navigationProvider: navigationProvider.id,
+        placeId: place.id,
+      });
+    }
     setFailedPlace(opened ? null : place);
   }, []);
 

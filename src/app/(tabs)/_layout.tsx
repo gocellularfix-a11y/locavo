@@ -2,11 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
+import { useI18n } from '../../i18n/I18nContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { fontFamilies } from '../../theme/tokens';
 
 export default function TabsLayout() {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
 
   return (
     <Tabs
@@ -27,21 +29,21 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => <Ionicons name="flash" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explorar',
+          title: t('tabs.explore'),
           tabBarIcon: ({ color, size }) => <Ionicons name="compass" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Ajustes',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
         }}
       />

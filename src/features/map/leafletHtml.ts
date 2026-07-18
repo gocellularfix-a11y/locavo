@@ -81,7 +81,7 @@ export function buildLeafletHtml(initial: MapUpdatePayload): string {
             fillColor: state.palette.user,
             fillOpacity: 1,
             weight: 2
-          }).bindTooltip('Tu ubicación').addTo(userLayer);
+          }).bindTooltip(state.userLabel).addTo(userLayer);
         }
       }
 

@@ -1,57 +1,46 @@
 import React from 'react';
 
 import { LegalPage } from '../components/LegalPage';
+import { useI18n } from '../i18n/I18nContext';
 
 export default function SupportScreen() {
+  const { t } = useI18n();
   return (
     <LegalPage
-      title="Soporte"
-      intro="Respuestas rápidas a las dudas más comunes de esta fase de demostración."
+      title={t('support.title')}
+      intro={t('support.intro')}
       sections={[
         {
-          heading: '¿Cómo activo mi ubicación?',
-          bullets: [
-            'En Inicio, toca "Usar mi ubicación actual" y acepta el permiso cuando el sistema lo pida.',
-            'Si antes lo rechazaste, actívalo desde los ajustes del sistema: busca Locavo en Aplicaciones → Permisos → Ubicación.',
-          ],
+          heading: t('support.enable.title'),
           paragraphs: [],
+          bullets: [t('support.enable.b1'), t('support.enable.b2')],
         },
         {
-          heading: '¿Y si no quiero compartir mi ubicación?',
-          paragraphs: [
-            'Puedes usar Locavo sin permiso de ubicación: en Ajustes elige una zona manual de Culiacán (Centro, Tres Ríos, Zona Universitaria o Las Vegas/Sur) y los resultados se ordenarán desde ahí.',
-          ],
+          heading: t('support.manual.title'),
+          paragraphs: [t('support.manual.body')],
         },
         {
-          heading: 'El mapa no carga',
-          bullets: [
-            'Revisa tu conexión a internet: las teselas del mapa la necesitan.',
-            'Usa el botón "Reintentar mapa" del aviso.',
-            'Aunque el mapa falle, la lista de lugares, la búsqueda y la recomendación siguen funcionando.',
-          ],
+          heading: t('support.map.title'),
           paragraphs: [],
+          bullets: [t('support.map.b1'), t('support.map.b2'), t('support.map.b3')],
         },
         {
-          heading: 'Google Maps no abre',
-          bullets: [
-            'Vuelve a intentarlo desde el aviso que aparece en pantalla.',
-            'El enlace funciona aunque no tengas la app de Google Maps: se abrirá en el navegador.',
-            'Verifica que tengas un navegador habilitado en tu dispositivo.',
-          ],
+          heading: t('support.maps.title'),
           paragraphs: [],
+          bullets: [t('support.maps.b1'), t('support.maps.b2'), t('support.maps.b3')],
         },
         {
-          heading: '¿Cómo instalo Locavo como aplicación (PWA)?',
-          bullets: [
-            'Abre la versión web de Locavo en Chrome o Edge.',
-            'En Android: toca el menú ⋮ y elige "Agregar a pantalla principal" o "Instalar aplicación".',
-            'En escritorio: usa el icono de instalación en la barra de direcciones.',
-            'En iPhone (Safari): botón Compartir → "Agregar a pantalla de inicio".',
-          ],
+          heading: t('support.pwa.title'),
           paragraphs: [],
+          bullets: [
+            t('support.pwa.b1'),
+            t('support.pwa.b2'),
+            t('support.pwa.b3'),
+            t('support.pwa.b4'),
+          ],
         },
       ]}
-      note="El canal formal de contacto de soporte será publicado antes del lanzamiento."
+      note={t('support.note')}
     />
   );
 }

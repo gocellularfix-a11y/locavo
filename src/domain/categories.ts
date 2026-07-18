@@ -1,63 +1,60 @@
 import type { CategoryId } from './place';
 
 /**
- * Catálogo cerrado de categorías del MVP (Fase 1).
- * `icon` es un nombre de Ionicons (única familia de iconos del proyecto).
+ * Catálogo cerrado de categorías del MVP.
+ *
+ * Los IDs internos NUNCA cambian; la presentación (nombre visible) se
+ * resuelve por i18n con la clave `category.{id}`. `icon` es un nombre de
+ * Ionicons (única familia de iconos del proyecto).
  */
 export interface CategoryMeta {
   id: CategoryId;
-  label: string;
   icon: string;
-  /** Términos que la búsqueda local asocia a la categoría (sin acentos no es necesario: se normalizan). */
+  /**
+   * Términos semilla (español) que la búsqueda indexa por lugar. Los demás
+   * idiomas se cubren con el Search Alias Engine (i18n/searchAliases.ts).
+   */
   searchTerms: string[];
 }
 
 export const CATEGORIES: CategoryMeta[] = [
   {
     id: 'food',
-    label: 'Comida',
     icon: 'restaurant',
     searchTerms: ['comida', 'tacos', 'taquería', 'restaurante', 'mariscos', 'birria', 'antojitos', 'cenaduría', 'sushi'],
   },
   {
     id: 'beer',
-    label: 'Cerveza',
     icon: 'beer',
     searchTerms: ['cerveza', 'expendio', 'chelas', 'six', 'caguama', 'depósito', 'cervecería'],
   },
   {
     id: 'coffee',
-    label: 'Café',
     icon: 'cafe',
     searchTerms: ['café', 'cafetería', 'coffee', 'espresso', 'capuchino'],
   },
   {
     id: 'lodging',
-    label: 'Hospedaje',
     icon: 'bed',
     searchTerms: ['hotel', 'motel', 'hospedaje', 'habitación'],
   },
   {
     id: 'pharmacy',
-    label: 'Farmacias',
     icon: 'medical',
     searchTerms: ['farmacia', 'medicina', 'medicamentos', 'botica'],
   },
   {
     id: 'gas',
-    label: 'Gasolineras',
     icon: 'car',
     searchTerms: ['gasolina', 'gasolinera', 'combustible', 'diésel'],
   },
   {
     id: 'store',
-    label: 'Tiendas',
     icon: 'storefront',
     searchTerms: ['tienda', 'abarrotes', 'súper', 'supermercado', 'conveniencia'],
   },
   {
     id: 'nightlife',
-    label: 'Vida nocturna',
     icon: 'moon',
     searchTerms: ['antro', 'bar', 'cantina', 'vida nocturna', 'noche', 'música'],
   },
@@ -75,4 +72,9 @@ export function getCategoryMeta(id: CategoryId): CategoryMeta {
 
 export function isCategoryId(value: string): value is CategoryId {
   return BY_ID.has(value as CategoryId);
+}
+
+/** Clave i18n del nombre visible de una categoría. */
+export function categoryLabelKey(id: CategoryId): `category.${CategoryId}` {
+  return `category.${id}`;
 }

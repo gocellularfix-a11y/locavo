@@ -1,6 +1,5 @@
 import {
   DEFAULT_MANUAL_LOCATION,
-  describeLocationFailure,
   MANUAL_LOCATIONS,
   readCurrentLocation,
   resolveManualLocation,
@@ -104,12 +103,4 @@ describe('resolveManualLocation', () => {
   });
 });
 
-describe('describeLocationFailure', () => {
-  it('mensajes humanos por cada motivo', () => {
-    expect(describeLocationFailure('denied', 'Centro de Culiacán')).toContain('Permiso');
-    expect(describeLocationFailure('services-off', 'Centro de Culiacán')).toContain('desactivada');
-    expect(describeLocationFailure('timeout', 'Centro de Culiacán')).toContain('tardó');
-    expect(describeLocationFailure('error', 'Centro de Culiacán')).toContain('no está disponible');
-    expect(describeLocationFailure('invalid', 'Centro de Culiacán')).toContain('no está disponible');
-  });
-});
+// Los mensajes humanos de falla se prueban en i18n/__tests__/format.test.ts.

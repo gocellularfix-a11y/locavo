@@ -5,9 +5,11 @@ import { Pressable, View } from 'react-native';
 import { AppText } from './AppText';
 import { ConfidenceIndicator } from './ConfidenceIndicator';
 import { StatusBadge } from './StatusBadge';
-import { getCategoryMeta } from '../domain/categories';
-import { formatDistance, formatTravelTime } from '../domain/distance';
-import type { ScoredPlace } from '../domain/recommendation';
+import { categoryLabelKey, getCategoryMeta } from '../domain/categories';
+import { confidenceLevelOf } from '../domain/places/LocavoPlace';
+import { formatDistanceLocalized, formatTravelTimeLocalized } from '../i18n/format';
+import { useI18n } from '../i18n/I18nContext';
+import type { ScoredPlace } from '../services/places/PlaceRankingService';
 import { getCategoryVisual } from '../theme/categoryColors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
@@ -21,16 +23,18 @@ export interface PlaceCardProps {
 /** Tarjeta estándar de resultado: lo esencial para decidir, sin ruido. */
 export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps) {
   const { colors, scheme } = useAppTheme();
+  const { t, locale } = useI18n();
   const { place, distanceKm, travelMinutes, status } = scored;
   const category = getCategoryMeta(place.category);
   const visual = getCategoryVisual(place.category, scheme);
+  const categoryLabel = t(categoryLabelKey(place.category));
 
   return (
     <Pressable
       onPress={() => onPress(scored)}
       accessibilityRole="button"
-      accessibilityLabel={`${place.name}, ${category.label}`}
-      accessibilityHint="Abre los detalles del lugar"
+      accessibilityLabel={t('place.cardA11y', { name: place.name, category: categoryLabel })}
+      accessibilityHint={t('place.cardHint')}
       accessibilityState={{ selected }}
       style={({ pressed }) => ({
         borderRadius: radii.card,
@@ -68,7 +72,7 @@ export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps)
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}
       >
         <AppText variant="caption" tone="secondary">
-          {category.label}
+          {categoryLabel}
         </AppText>
         <StatusBadge status={status} />
       </View>
@@ -77,9 +81,10 @@ export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps)
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}
       >
         <AppText variant="body" tone="secondary">
-          {formatDistance(distanceKm)} · {formatTravelTime(travelMinutes)}
+          {formatDistanceLocalized(distanceKm, locale)} ·{' '}
+          {formatTravelTimeLocalized(travelMinutes, locale)}
         </AppText>
-        <ConfidenceIndicator level={place.confidence} />
+        <ConfidenceIndicator level={confidenceLevelOf(place.verification.confidence)} />
       </View>
     </Pressable>
   );

@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { MapFallback } from './MapFallback';
 import { sanitizeMarkers, safeCenter, safeUserLocation } from './markers';
 import { DEFAULT_MAP_HEIGHT, DEFAULT_ZOOM, type MapSurfaceProps } from './types';
+import { useI18n } from '../../i18n/I18nContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii } from '../../theme/tokens';
 
@@ -23,6 +24,7 @@ export function MapSurface({
   height = DEFAULT_MAP_HEIGHT,
 }: MapSurfaceProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
@@ -121,10 +123,10 @@ export function MapSurface({
         fillOpacity: 1,
         weight: 2,
       })
-        .bindTooltip('Tu ubicación')
+        .bindTooltip(t('map.yourLocation'))
         .addTo(layer);
     }
-  }, [userLocation, colors, attempt]);
+  }, [userLocation, colors, attempt, t]);
 
   if (failed) {
     return (
@@ -140,7 +142,7 @@ export function MapSurface({
 
   return (
     <View
-      accessibilityLabel="Mapa de resultados"
+      accessibilityLabel={t('map.a11y')}
       style={{
         height,
         borderRadius: radii.card,
@@ -153,7 +155,7 @@ export function MapSurface({
         key={attempt}
         ref={containerRef}
         role="application"
-        aria-label="Mapa de resultados"
+        aria-label={t('map.a11y')}
         style={{ width: '100%', height: '100%' }}
       />
     </View>

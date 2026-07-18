@@ -1,5 +1,4 @@
 import {
-  describeOpenStatus,
   evaluateOpenStatus,
   formatTime12h,
   minutesToTime,
@@ -96,14 +95,6 @@ describe('formato de estado', () => {
     expect(formatTime12h('23:00')).toBe('11:00 p. m.');
     expect(formatTime12h('00:30')).toBe('12:30 a. m.');
     expect(formatTime12h('12:05')).toBe('12:05 p. m.');
-  });
-
-  it('describeOpenStatus', () => {
-    expect(describeOpenStatus({ state: 'open', closesAt: '23:00' })).toBe(
-      'Abierto hasta las 11:00 p. m.',
-    );
-    expect(describeOpenStatus({ state: 'closed' })).toBe('Cerrado');
-    expect(describeOpenStatus({ state: 'unknown' })).toBe('Horario no confirmado');
   });
 
   it('minutesToTime', () => {

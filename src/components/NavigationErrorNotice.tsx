@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { AppText } from './AppText';
+import { useI18n } from '../i18n/I18nContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
 
@@ -20,6 +21,7 @@ export function NavigationErrorNotice({
   onDismiss,
 }: NavigationErrorNoticeProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   return (
     <View
       accessibilityRole="alert"
@@ -34,21 +36,21 @@ export function NavigationErrorNotice({
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
         <Ionicons name="alert-circle" size={20} color={colors.danger} />
         <AppText variant="bodyStrong" color={colors.danger} style={{ flex: 1 }}>
-          No pudimos abrir Google Maps para {placeName}.
+          {t('navError.title', { name: placeName })}
         </AppText>
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar aviso"
+          accessibilityLabel={t('navError.closeA11y')}
           hitSlop={8}
         >
           <Ionicons name="close" size={20} color={colors.danger} />
         </Pressable>
       </View>
       <AppText variant="body" tone="secondary">
-        Verifica que tengas un navegador o la app de Google Maps disponible e inténtalo de nuevo.
+        {t('navError.body')}
       </AppText>
-      <AppButton label="Reintentar" variant="secondary" icon="refresh" onPress={onRetry} />
+      <AppButton label={t('common.retry')} variant="secondary" icon="refresh" onPress={onRetry} />
     </View>
   );
 }

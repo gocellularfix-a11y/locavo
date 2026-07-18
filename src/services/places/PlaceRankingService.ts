@@ -1,10 +1,17 @@
-import { evaluateOpenStatus, type OpenStatus } from './openingHours';
-import { estimateTravelMinutes, haversineKm } from './distance';
-import type { Coordinates, Place } from './place';
+import { estimateTravelMinutes, haversineKm } from '../../domain/distance';
+import { evaluateOpenStatus, type OpenStatus } from '../../domain/openingHours';
+import type { Coordinates } from '../../domain/place';
+import type { LocavoPlace } from '../../domain/places/LocavoPlace';
 
 /**
- * Motor de recomendación local, determinista y explicable.
- * No usa IA ni aleatoriedad: mismas entradas → mismo resultado.
+ * Ranking local, determinista y explicable sobre el modelo canónico.
+ * Sin IA, sin aleatoriedad y sin calificaciones inventadas: mismas
+ * entradas → mismo orden. Separado de la UI y de los datos.
+ *
+ * Preparado para datos reales: los factores (apertura, distancia,
+ * confianza de verificación, recencia, completitud) provienen del modelo
+ * canónico, no de la semilla. Factores futuros (accesibilidad, precio,
+ * familia) podrán sumarse aquí sin tocar pantallas.
  */
 
 export type RecommendationReason =
@@ -15,7 +22,7 @@ export type RecommendationReason =
   | 'COMPLETE_INFORMATION';
 
 export interface ScoredPlace {
-  place: Place;
+  place: LocavoPlace;
   distanceKm: number;
   travelMinutes: number;
   status: OpenStatus;
@@ -29,31 +36,32 @@ const RECENT_DAYS = 21;
 const DISTANCE_HORIZON_KM = 8;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** Fracción 0–1 de campos opcionales informados (horario, teléfono, sitio, precio). */
-export function completenessOf(place: Place): number {
-  const fields = [place.openingHours, place.phone, place.website, place.priceLevel];
+/** Fracción 0–1 de campos informados (horario, teléfono, sitio, precio). */
+export function completenessOf(place: LocavoPlace): number {
+  const fields = [place.hours, place.contact?.phone, place.contact?.website, place.price?.level];
   const present = fields.filter((f) => f !== null && f !== undefined).length;
   return present / fields.length;
 }
 
-function daysSinceVerified(place: Place, now: Date): number {
-  const verified = Date.parse(place.lastVerifiedAt);
+function daysSinceVerified(place: LocavoPlace, now: Date): number {
+  const iso = place.verification.lastVerifiedAt;
+  const verified = iso ? Date.parse(iso) : Number.NaN;
   if (Number.isNaN(verified)) {
     return Number.POSITIVE_INFINITY;
   }
   return Math.max(0, (now.getTime() - verified) / MS_PER_DAY);
 }
 
-export function scorePlace(place: Place, origin: Coordinates, now: Date): ScoredPlace {
-  const distanceKm = haversineKm(origin, place);
-  const status = evaluateOpenStatus(place.openingHours, now);
+export function scorePlace(place: LocavoPlace, origin: Coordinates, now: Date): ScoredPlace {
+  const distanceKm = haversineKm(origin, place.coordinates);
+  const status = evaluateOpenStatus(place.hours ?? null, now);
   const completeness = completenessOf(place);
   const recencyDays = daysSinceVerified(place, now);
+  const confidence = place.verification.confidence;
 
   const openScore = status.state === 'open' ? 0.4 : status.state === 'unknown' ? 0.12 : 0;
   const distanceScore = Math.max(0, 1 - distanceKm / DISTANCE_HORIZON_KM) * 0.25;
-  const confidenceScore =
-    place.confidence === 'high' ? 0.15 : place.confidence === 'medium' ? 0.08 : 0;
+  const confidenceScore = confidence >= 0.75 ? 0.15 : confidence >= 0.45 ? 0.08 : 0;
   const recencyScore = recencyDays <= RECENT_DAYS ? 0.1 : recencyDays <= 60 ? 0.05 : 0;
   const completenessScore = completeness * 0.1;
 
@@ -67,7 +75,7 @@ export function scorePlace(place: Place, origin: Coordinates, now: Date): Scored
   if (recencyDays <= RECENT_DAYS) {
     reasons.push('RECENTLY_VERIFIED');
   }
-  if (place.confidence === 'high') {
+  if (confidence >= 0.75) {
     reasons.push('HIGH_CONFIDENCE');
   }
   if (completeness >= 0.75) {
@@ -86,9 +94,13 @@ export function scorePlace(place: Place, origin: Coordinates, now: Date): Scored
 
 /**
  * Ordena lugares por conveniencia con desempates deterministas:
- * puntuación desc → distancia asc → nombre asc → id asc.
+ * puntuación desc → distancia asc → nombre normalizado asc → id asc.
  */
-export function rankPlaces(places: Place[], origin: Coordinates, now: Date): ScoredPlace[] {
+export function rankPlaces(
+  places: LocavoPlace[],
+  origin: Coordinates,
+  now: Date,
+): ScoredPlace[] {
   return places
     .map((place) => scorePlace(place, origin, now))
     .sort((a, b) => {
@@ -98,8 +110,8 @@ export function rankPlaces(places: Place[], origin: Coordinates, now: Date): Sco
       if (a.distanceKm !== b.distanceKm) {
         return a.distanceKm - b.distanceKm;
       }
-      if (a.place.name !== b.place.name) {
-        return a.place.name < b.place.name ? -1 : 1;
+      if (a.place.normalizedName !== b.place.normalizedName) {
+        return a.place.normalizedName < b.place.normalizedName ? -1 : 1;
       }
       return a.place.id < b.place.id ? -1 : 1;
     });
@@ -115,7 +127,8 @@ const REASON_PHRASES: Record<RecommendationReason, string> = {
 
 /**
  * Convierte razones estructuradas en una explicación legible:
- * "Recomendado porque está abierto, está cerca y su información fue verificada recientemente."
+ * "Recomendado porque está abierto, está cerca y su información fue
+ * verificada recientemente."
  */
 export function explainReasons(reasons: RecommendationReason[]): string {
   if (reasons.length === 0) {
