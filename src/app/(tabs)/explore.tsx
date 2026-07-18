@@ -18,6 +18,7 @@ import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { analytics } from '../../services/container';
 import { useLocationState } from '../../state/LocationContext';
+import { getCategoryVisual } from '../../theme/categoryColors';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 
@@ -25,10 +26,16 @@ interface FilterChipProps {
   label: string;
   active: boolean;
   onPress: () => void;
+  /** Color de fondo cuando está activo (default: coral de marca). */
+  activeColor?: string;
+  /** Color del texto sobre `activeColor` (default: blanco de marca). */
+  activeTextColor?: string;
 }
 
-function FilterChip({ label, active, onPress }: FilterChipProps) {
+function FilterChip({ label, active, onPress, activeColor, activeTextColor }: FilterChipProps) {
   const { colors } = useAppTheme();
+  const activeBg = activeColor ?? colors.brand;
+  const activeText = activeTextColor ?? colors.onBrand;
   return (
     <Pressable
       onPress={onPress}
@@ -40,18 +47,13 @@ function FilterChip({ label, active, onPress }: FilterChipProps) {
         paddingHorizontal: spacing.lg,
         minHeight: 40,
         justifyContent: 'center',
-        backgroundColor: active
-          ? pressed
-            ? colors.brandPressed
-            : colors.brand
-          : pressed
-            ? colors.neutralSoft
-            : colors.surface,
+        backgroundColor: active ? activeBg : pressed ? colors.neutralSoft : colors.surface,
+        opacity: active && pressed ? 0.85 : 1,
         borderWidth: active ? 0 : 1,
         borderColor: colors.border,
       })}
     >
-      <AppText variant="label" color={active ? colors.onBrand : colors.textPrimary}>
+      <AppText variant="label" color={active ? activeText : colors.textPrimary}>
         {label}
       </AppText>
     </Pressable>
@@ -60,7 +62,7 @@ function FilterChip({ label, active, onPress }: FilterChipProps) {
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { colors, scheme } = useAppTheme();
   const location = useLocationState();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ category?: string; q?: string }>();
@@ -198,20 +200,25 @@ export default function ExploreScreen() {
           active={sortByDistance}
           onPress={() => setSortByDistance((v) => !v)}
         />
-        {CATEGORIES.map((c) => (
-          <FilterChip
-            key={c.id}
-            label={c.label}
-            active={category === c.id}
-            onPress={() => {
-              const next = category === c.id ? null : c.id;
-              setCategory(next);
-              if (next) {
-                analytics.track({ eventName: 'category_selected', category: next });
-              }
-            }}
-          />
-        ))}
+        {CATEGORIES.map((c) => {
+          const visual = getCategoryVisual(c.id, scheme);
+          return (
+            <FilterChip
+              key={c.id}
+              label={c.label}
+              active={category === c.id}
+              activeColor={visual.solid}
+              activeTextColor={visual.onSolid}
+              onPress={() => {
+                const next = category === c.id ? null : c.id;
+                setCategory(next);
+                if (next) {
+                  analytics.track({ eventName: 'category_selected', category: next });
+                }
+              }}
+            />
+          );
+        })}
       </ScrollView>
     </View>
   );

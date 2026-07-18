@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { AppText } from './AppText';
+import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
-import { getCategoryMeta } from '../domain/categories';
 import { formatDistance, formatTravelTime } from '../domain/distance';
 import { explainReasons, type ScoredPlace } from '../domain/recommendation';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -20,7 +20,6 @@ export interface RecommendedPlaceCardProps {
 export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: RecommendedPlaceCardProps) {
   const { colors } = useAppTheme();
   const { place, distanceKm, travelMinutes, status, reasons } = scored;
-  const category = getCategoryMeta(place.category);
 
   return (
     <View
@@ -44,13 +43,11 @@ export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: Recommen
         MEJOR OPCIÓN AHORA
       </AppText>
 
-      <View style={{ gap: spacing.xs }}>
+      <View style={{ gap: spacing.sm }}>
         <AppText variant="section" numberOfLines={2}>
           {place.name}
         </AppText>
-        <AppText variant="caption" tone="secondary">
-          {category.label}
-        </AppText>
+        <CategoryBadge category={place.category} />
       </View>
 
       <View

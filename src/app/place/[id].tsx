@@ -5,12 +5,12 @@ import { Linking, Pressable, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
+import { CategoryBadge } from '../../components/CategoryBadge';
 import { ConfidenceIndicator } from '../../components/ConfidenceIndicator';
 import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackStates';
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatusBadge } from '../../components/StatusBadge';
-import { getCategoryMeta } from '../../domain/categories';
 import { formatDistance, formatTravelTime } from '../../domain/distance';
 import type { Place } from '../../domain/place';
 import { explainReasons, scorePlace } from '../../domain/recommendation';
@@ -126,16 +126,13 @@ export default function PlaceDetailScreen() {
     body = <ErrorState onRetry={() => router.replace(`/place/${validId}`)} />;
   } else if (scored) {
     const { place } = state;
-    const category = getCategoryMeta(place.category);
     body = (
       <View style={{ gap: spacing.xl }}>
-        <View style={{ gap: spacing.xs }}>
+        <View style={{ gap: spacing.sm }}>
           <AppText variant="title" accessibilityRole="header">
             {place.name}
           </AppText>
-          <AppText variant="body" tone="secondary">
-            {category.label}
-          </AppText>
+          <CategoryBadge category={place.category} />
         </View>
 
         <View

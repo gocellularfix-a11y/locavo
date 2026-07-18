@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { AppText } from './AppText';
 import type { CategoryMeta } from '../domain/categories';
+import { getCategoryVisual } from '../theme/categoryColors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
 
@@ -13,9 +14,14 @@ export interface CategoryCardProps {
   onPress: (category: CategoryMeta) => void;
 }
 
-/** Tarjeta de categoría: icono + nombre, con estado seleccionado en coral. */
+/**
+ * Tarjeta de categoría (V2): tarjeta neutra con icon holder del color
+ * distintivo de la categoría. El color vive en el holder, no en toda la
+ * tarjeta, para mantener el diseño sobrio.
+ */
 export function CategoryCard({ category, selected = false, onPress }: CategoryCardProps) {
-  const { colors } = useAppTheme();
+  const { colors, scheme } = useAppTheme();
+  const visual = getCategoryVisual(category.id, scheme);
 
   return (
     <Pressable
@@ -25,34 +31,36 @@ export function CategoryCard({ category, selected = false, onPress }: CategoryCa
       accessibilityState={{ selected }}
       style={({ pressed }) => ({
         flex: 1,
-        minHeight: 92,
+        minHeight: 104,
         borderRadius: radii.card,
-        backgroundColor: selected
-          ? pressed
-            ? colors.brandPressed
-            : colors.brand
-          : pressed
-            ? colors.neutralSoft
-            : colors.surface,
-        borderWidth: selected ? 0 : 1,
-        borderColor: colors.border,
+        backgroundColor: pressed ? colors.neutralSoft : colors.surface,
+        borderWidth: selected ? 2 : 1,
+        borderColor: selected ? visual.solid : colors.border,
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing.sm,
-        padding: spacing.md,
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing.md,
         transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      <Ionicons
-        name={category.icon as keyof typeof Ionicons.glyphMap}
-        size={26}
-        color={selected ? colors.onBrand : colors.brand}
-      />
-      <AppText
-        variant="label"
-        color={selected ? colors.onBrand : colors.textPrimary}
-        numberOfLines={1}
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: selected ? visual.solid : visual.holder,
+        }}
       >
+        <Ionicons
+          name={category.icon as keyof typeof Ionicons.glyphMap}
+          size={24}
+          color={selected ? visual.onSolid : visual.icon}
+        />
+      </View>
+      <AppText variant="label" numberOfLines={1}>
         {category.label}
       </AppText>
     </Pressable>

@@ -8,6 +8,7 @@ import { StatusBadge } from './StatusBadge';
 import { getCategoryMeta } from '../domain/categories';
 import { formatDistance, formatTravelTime } from '../domain/distance';
 import type { ScoredPlace } from '../domain/recommendation';
+import { getCategoryVisual } from '../theme/categoryColors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
 
@@ -19,9 +20,10 @@ export interface PlaceCardProps {
 
 /** Tarjeta estándar de resultado: lo esencial para decidir, sin ruido. */
 export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps) {
-  const { colors } = useAppTheme();
+  const { colors, scheme } = useAppTheme();
   const { place, distanceKm, travelMinutes, status } = scored;
   const category = getCategoryMeta(place.category);
+  const visual = getCategoryVisual(place.category, scheme);
 
   return (
     <Pressable
@@ -40,11 +42,22 @@ export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps)
       })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Ionicons
-          name={category.icon as keyof typeof Ionicons.glyphMap}
-          size={18}
-          color={colors.brand}
-        />
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: visual.holder,
+          }}
+        >
+          <Ionicons
+            name={category.icon as keyof typeof Ionicons.glyphMap}
+            size={17}
+            color={visual.icon}
+          />
+        </View>
         <AppText variant="cardTitle" numberOfLines={1} style={{ flex: 1 }}>
           {place.name}
         </AppText>
