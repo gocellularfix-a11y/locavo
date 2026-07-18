@@ -1,5 +1,5 @@
 import { exposeFlagsForDevInspection, FEATURE_FLAGS, getDataMode } from '../config/featureFlags';
-import { LocalPlaceRepository } from '../data/places/LocalPlaceRepository';
+import { createPlaceRepository } from '../data/places/createPlaceRepository';
 import type { PlaceRepository } from '../data/places/PlaceRepository';
 import {
   exposeForDevInspection,
@@ -24,9 +24,10 @@ exposeFlagsForDevInspection();
 /** dataMode: 'mock' hoy; 'cloud' cuando useCloudPlaceRepository esté activo. */
 export const dataMode = getDataMode(FEATURE_FLAGS);
 
-// `useCloudPlaceRepository` está apagado por default; no existe todavía un
-// CloudPlaceRepository y el flag no debe encenderse en V3.
-export const placeRepository: PlaceRepository = new LocalPlaceRepository();
+// Composición vía factory (V4A): con el flag apagado SIEMPRE es
+// LocalPlaceRepository, existan o no variables de Supabase. La activación
+// cloud será una decisión explícita futura (V4B+), nunca accidental.
+export const placeRepository: PlaceRepository = createPlaceRepository();
 
 export const placeSearchService = new PlaceSearchService(placeRepository, analytics);
 

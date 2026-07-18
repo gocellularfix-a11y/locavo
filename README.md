@@ -45,6 +45,14 @@ añadió:
   búsqueda multilenguaje por alias ("beer", "cerveza" y "啤酒" encuentran
   lo mismo). Los datos (nombres comerciales, calles, colonias) nunca se
   traducen.
+- **Base Supabase local (V4A)**: proyecto `supabase/` versionado con
+  migración real (PostgreSQL + PostGIS, RLS de solo-lectura pública,
+  RPCs geoespaciales seguras), seed de desarrollo, repositorio cloud
+  implementado pero **apagado por feature flag** (la app sigue usando los
+  datos demo locales) y `.env.example` sin credenciales. Sin proyecto
+  remoto ni datos reales todavía. Ver
+  [docs/SUPABASE_FOUNDATION.md](docs/SUPABASE_FOUNDATION.md) y
+  [docs/SUPABASE_SECURITY.md](docs/SUPABASE_SECURITY.md).
 - **Arquitectura de lugares neutral al proveedor**: modelo canónico
   `LocavoPlace` con identidad propia, procedencia y confianza;
   `PlaceSearchService` → `PlaceRepository` → `LocalPlaceRepository`;

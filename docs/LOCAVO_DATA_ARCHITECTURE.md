@@ -109,6 +109,15 @@ y `verification { status, confidence 0–1, lastVerifiedAt }`. La UI muestra
 confianza en lenguaje claro (alta/reciente/limitada), jamás porcentajes,
 estrellas ni reseñas inventadas.
 
+## Base Supabase (V4A)
+
+La fundación cloud ya existe de forma local y versionada: migración real
+(PostGIS + pg_trgm + RLS + RPCs de lectura), seed de desarrollo,
+`SupabasePlaceRepository` implementando el mismo contrato `PlaceRepository`
+y una factory (`createPlaceRepository`) que compone local/cloud según el
+feature flag. Sin proyecto remoto ni datos reales todavía. Detalles en
+`docs/SUPABASE_FOUNDATION.md` y `docs/SUPABASE_SECURITY.md`.
+
 ## Transición mock → cloud
 
 - Semilla actual: 24 lugares "Demo" migrados al modelo canónico por
