@@ -1,0 +1,157 @@
+# Locavo
+
+**No busques. Decide.**
+
+Locavo es una aplicación universal (Android, iOS y web/PWA) que ayuda a decidir
+rápidamente a dónde ir **ahora** en Culiacán, Sinaloa: combina ubicación,
+horario, distancia, categoría, calidad de la información y recencia de
+verificación para recomendar la mejor opción del momento, con una explicación
+clara de por qué.
+
+A diferencia de un mapa tradicional (que responde *"¿dónde está?"*), Locavo
+responde *"¿cuál opción me conviene ahora?"*. El objetivo de flujo: de una
+necesidad a iniciar navegación en menos de diez segundos.
+
+## Fase 1 (este repositorio)
+
+MVP funcional con **datos locales simulados** para una sola ciudad
+(**Culiacán**): experiencia de decisión completa (inicio → categoría/búsqueda →
+resultados con mapa → recomendación explicada → detalles → "Cómo llegar" →
+Google Maps), sin backend.
+
+## Plataformas
+
+- Android (Expo)
+- iOS/iPadOS (Expo)
+- Web responsive + **PWA instalable**
+
+Una sola base de código: Expo + React Native + TypeScript estricto +
+Expo Router + React Native Web.
+
+## Requisitos
+
+- Node.js 20+ (probado con Node 24)
+- npm 10+
+- Para móvil: app **Expo Go** en el dispositivo, o un emulador Android /
+  simulador iOS
+
+## Instalación
+
+```bash
+git clone https://github.com/gocellularfix-a11y/locavo.git
+cd locavo
+npm install
+```
+
+## Comandos
+
+| Comando             | Descripción                                       |
+| ------------------- | ------------------------------------------------- |
+| `npm start`         | Servidor de desarrollo Expo (QR para Expo Go)     |
+| `npm run android`   | Desarrollo apuntando a Android                    |
+| `npm run ios`       | Desarrollo apuntando a iOS (requiere macOS)       |
+| `npm run web`       | Desarrollo web                                    |
+| `npm run lint`      | ESLint (config de Expo)                           |
+| `npm run typecheck` | TypeScript estricto sin emitir                    |
+| `npm test`          | Pruebas unitarias (Jest + jest-expo)              |
+| `npm run build:web` | Build web estático de producción (carpeta `dist`) |
+| `npm run validate`  | lint + typecheck + tests + build web              |
+
+### Probar el build web/PWA localmente
+
+```bash
+npm run build:web
+npx serve dist
+```
+
+Abre la URL indicada; en un navegador compatible (Chrome/Edge) aparecerá la
+opción de **instalar Locavo** como aplicación (manifest + service worker con
+shell offline básico).
+
+## Estructura principal
+
+```
+src/
+  app/          Pantallas (Expo Router): tabs Inicio/Explorar/Ajustes, detalle
+  components/   Sistema de diseño (AppButton, PlaceCard, StatusBadge, …)
+  domain/       Lógica pura: horarios, distancia, búsqueda, recomendación
+  data/         Datos simulados + MockPlaceRepository
+  features/map/ MapSurface (Leaflet: WebView en nativo, DOM en web)
+  hooks/        usePlacesQuery (carga + filtrado + ranking)
+  services/     Analítica local, navegación externa, ubicación, contenedor
+  state/        Contexto de ubicación
+  theme/        Tokens de diseño y tema claro/oscuro/sistema
+  utils/        Normalización de texto y formato
+public/         manifest.webmanifest, sw.js, iconos PWA
+```
+
+## Datos simulados
+
+Los 24 lugares son **sintéticos**: llevan prefijo `Demo`, `isDemo: true` y
+fuente `demo-seed`. No representan negocios reales verificados. Cubren las 8
+categorías del MVP: Comida, Cerveza, Café, Hospedaje, Farmacias, Gasolineras,
+Tiendas y Vida nocturna.
+
+## Privacidad
+
+- La ubicación se lee **una sola vez** cuando el usuario lo pide.
+- Sin rastreo continuo, sin ubicación en segundo plano, sin historial de
+  recorridos, sin geofencing.
+- Si el permiso se rechaza, se usa una zona manual de Culiacán (configurable
+  en Ajustes).
+- La analítica de demostración se guarda **solo en el dispositivo**
+  (AsyncStorage, tope de 200 eventos) y no incluye coordenadas del usuario.
+  En desarrollo puede inspeccionarse con `globalThis.locavoAnalytics.getEvents()`.
+
+## Navegación externa (Google Maps)
+
+El botón **"Cómo llegar"** abre el enlace universal:
+
+```
+https://www.google.com/maps/dir/?api=1&destination={lat},{lng}
+```
+
+Funciona aunque Google Maps no esté instalado (abre el navegador). Antes de
+abrirlo se registra localmente el evento `navigation_requested`
+(proveedor `google_maps`). Abrir la ruta representa **intención** de navegar,
+nunca una visita confirmada. La abstracción `NavigationProvider` permite
+agregar Waze o Apple Maps en el futuro (no implementados).
+
+## Mapa interno
+
+`MapSurface` muestra contexto con Leaflet + teselas de OpenStreetMap
+(circle markers, sin claves de API): WebView en Android/iOS y DOM en web.
+El mapa interno no usa Google Maps ni implica integración comercial alguna.
+Requiere conexión para las teselas.
+
+## Pruebas
+
+Las pruebas unitarias cubren: evaluador de horarios (incluye cruces de
+medianoche y días sin horario, zona fija UTC-7 de Culiacán), Haversine y
+estimación de tiempo, normalización de texto y búsqueda sin acentos, motor de
+recomendación con desempates deterministas y explicaciones, repositorio
+simulado, analítica local y construcción/validación del enlace de Google Maps.
+
+```bash
+npm test
+```
+
+## Limitaciones actuales (deliberadas)
+
+- Datos simulados: no hay negocios reales ni verificación externa.
+- El tiempo estimado de traslado es una aproximación urbana determinista;
+  **no** hay tráfico en tiempo real.
+- El mapa requiere internet (teselas OSM; en nativo, Leaflet vía CDN).
+- Horarios y hora local usan el desfase fijo UTC-7 de Culiacán (México ya no
+  aplica horario de verano).
+- Sin backend, cuentas, reseñas, notificaciones, pagos, delivery ni panel de
+  negocios.
+- Solo Culiacán; la arquitectura permite más ciudades en fases futuras.
+- No publicado en App Store / Google Play.
+
+## No incluido a propósito en Fase 1
+
+Backend de producción, autenticación, base de datos remota, IA, chat, red
+social, publicidad, reservaciones, navegación paso a paso propia,
+integraciones con Waze/Apple Maps, scraping, rastreo continuo, confirmación
+automática de visitas y sistema comunitario.

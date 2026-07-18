@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Locavo",
+    "slug": "locavo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "locavo",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Locavo usa tu ubicación solo para ordenar lugares cercanos mientras usas la app. No hay rastreo en segundo plano."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FF5A36",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FF5A36",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 220
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Locavo usa tu ubicación solo para ordenar lugares cercanos mientras usas la app. No hay rastreo en segundo plano.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
