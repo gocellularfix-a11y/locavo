@@ -98,6 +98,8 @@ export const es = {
   'explore.emptyGeneric': 'Prueba con otra categoría o cambia tu búsqueda.',
   'explore.removeFilter': 'Quitar filtro',
   'explore.seeAll': 'Ver todo',
+  'explore.loadMore': 'Cargar más lugares',
+  'explore.loadMoreHint': 'Carga la siguiente página de resultados',
 
   // Estado de apertura
   'status.open': 'Abierto',
@@ -141,6 +143,9 @@ export const es = {
   'place.price.unknown': 'Precio no disponible',
   'place.source': 'Fuente',
   'place.sourceDemo': 'Datos de demostración (demo-seed)',
+  'place.sourceDenue': 'INEGI DENUE — Directorio oficial de unidades económicas',
+  'place.datasetUpdated':
+    'Directorio oficial actualizado el {date}. Negocio aún sin verificación individual.',
   'place.lastVerification': 'Última verificación',
   'place.verifiedOn': 'Verificado el {date}',
   'place.verifiedUnknown': 'Fecha de verificación no disponible',

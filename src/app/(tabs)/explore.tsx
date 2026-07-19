@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
+import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
 import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackStates';
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
@@ -22,6 +23,9 @@ import { useLocationState } from '../../state/LocationContext';
 import { getCategoryVisual } from '../../theme/categoryColors';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
+
+/** Máximo de marcadores simultáneos en el mapa (tope V4D.1). */
+const MAX_MAP_MARKERS = 200;
 
 interface FilterChipProps {
   label: string;
@@ -96,7 +100,7 @@ export default function ExploreScreen() {
     }
   }
 
-  const { status, results, recommended, reload } = usePlacesQuery({
+  const { status, results, recommended, reload, hasMore, loadingMore, loadMore } = usePlacesQuery({
     category,
     query,
     openOnly,
@@ -114,9 +118,12 @@ export default function ExploreScreen() {
     }
   }, [recommended?.place.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Tope explícito de marcadores (V4D.1): el mapa nunca acumula miles de
+  // pines aunque el usuario cargue muchas páginas; 200 cubre varias páginas
+  // visibles sin degradar el mapa web/nativo.
   const markers = useMemo(
     () =>
-      results.map((r) => ({
+      results.slice(0, MAX_MAP_MARKERS).map((r) => ({
         id: r.place.id,
         latitude: r.place.coordinates.latitude,
         longitude: r.place.coordinates.longitude,
@@ -258,6 +265,16 @@ export default function ExploreScreen() {
           }}
         />
       ))}
+      {hasMore ? (
+        <AppButton
+          label={loadingMore ? t('common.loading') : t('explore.loadMore')}
+          variant="secondary"
+          icon="chevron-down"
+          disabled={loadingMore}
+          onPress={loadMore}
+          accessibilityHint={t('explore.loadMoreHint')}
+        />
+      ) : null}
     </View>
   );
 

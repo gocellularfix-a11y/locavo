@@ -84,6 +84,8 @@ export const zhCN: TranslationCatalog = {
   'explore.emptyGeneric': '试试其他类别或更改搜索内容。',
   'explore.removeFilter': '取消筛选',
   'explore.seeAll': '查看全部',
+  'explore.loadMore': '加载更多地点',
+  'explore.loadMoreHint': '加载下一页结果',
 
   'status.open': '营业中',
   'status.openUntil': '营业至 {time}',
@@ -123,6 +125,8 @@ export const zhCN: TranslationCatalog = {
   'place.price.unknown': '暂无价格信息',
   'place.source': '来源',
   'place.sourceDemo': '演示数据（demo-seed）',
+  'place.sourceDenue': 'INEGI DENUE — 官方经济单位名录',
+  'place.datasetUpdated': '官方名录更新于 {date}。该商家尚未经过单独核实。',
   'place.lastVerification': '最近核实',
   'place.verifiedOn': '核实于 {date}',
   'place.verifiedUnknown': '暂无核实日期',

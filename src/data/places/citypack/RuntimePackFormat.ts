@@ -13,11 +13,31 @@ import type { LocavoCategory } from '../../../domain/places/LocavoPlace';
  */
 
 export const RUNTIME_PACK_FORMAT = 'locavo-city-pack-runtime';
-export const RUNTIME_PACK_SCHEMA_VERSION = 1;
+/** v2 (V4D.1): trozos quadtree compactos + índice de búsqueda fragmentado. */
+export const RUNTIME_PACK_SCHEMA_VERSION = 2;
 
 export const MANIFEST_PATH = 'manifest.json';
 export const PLACE_ID_INDEX_PATH = 'index/place-id-index.json';
-export const SEARCH_INDEX_PATH = 'index/compact-search-index.json';
+export const SEARCH_SHARD_DIR = 'index/search';
+
+/**
+ * Clave de fragmento para un token normalizado (sin acentos: ñ → n).
+ * 'a'–'z' por letra inicial, dígitos en '0-9', el resto en 'other'.
+ */
+export function searchShardKeyOf(token: string): string {
+  const first = token[0] ?? '';
+  if (first >= 'a' && first <= 'z') {
+    return first;
+  }
+  if (first >= '0' && first <= '9') {
+    return '0-9';
+  }
+  return 'other';
+}
+
+export function searchShardPathOf(key: string): string {
+  return `${SEARCH_SHARD_DIR}/prefix-${key}.json`;
+}
 
 export interface GeoBounds {
   minLat: number;
@@ -51,8 +71,16 @@ export interface RuntimePackManifest {
   byCategory: Record<string, number>;
   indexes: {
     placeId: RuntimeFileInfo;
-    search: RuntimeFileInfo;
+    /** Fragmentos del índice invertido de búsqueda, por clave de prefijo. */
+    searchShards: Record<string, RuntimeFileInfo>;
   };
+  /**
+   * Tokens ultra-frecuentes (aparecen en gran parte de los lugares, p. ej.
+   * "culiacan"): NO llevan postings — un token de consulta que los alcanza
+   * se trata como comodín y se resuelve con carga acotada por cercanía más
+   * verificación exacta contra el matcher de dominio.
+   */
+  commonTokens: string[];
   chunks: RuntimeChunkInfo[];
 }
 
@@ -61,16 +89,17 @@ export interface PlaceIdIndex {
   ids: Record<string, number>;
 }
 
-/**
- * Entrada del índice de búsqueda compacto: [id, chunkIdx, texto].
- * `texto` = índice normalizado del lugar SIN los términos de la categoría
- * (estos se re-derivan de la categoría del trozo al momento de consultar,
- * manteniendo la paridad con domain/search.ts sin duplicar bytes).
- */
-export type SearchIndexEntry = [id: string, chunkIndex: number, text: string];
+/** Referencia compacta de candidato: [id, chunkIdx]. */
+export type SearchPosting = [id: string, chunkIndex: number];
 
-export interface CompactSearchIndex {
-  entries: SearchIndexEntry[];
+/**
+ * Fragmento del índice invertido: token normalizado (palabra completa del
+ * texto de búsqueda del lugar) → lista de candidatos. Los tokens de
+ * consulta se resuelven por PREFIJO de palabra; los candidatos siempre se
+ * verifican después contra placeMatchesQuery (cero falsos positivos).
+ */
+export interface SearchShard {
+  tokens: Record<string, SearchPosting[]>;
 }
 
 /** Contenido de un trozo de categoría. */
@@ -116,12 +145,24 @@ export function assertRuntimeManifest(value: unknown): RuntimePackManifest {
     !Array.isArray(m.chunks) ||
     !m.indexes ||
     !isFileInfo(m.indexes.placeId) ||
-    !isFileInfo(m.indexes.search) ||
+    typeof m.indexes.searchShards !== 'object' ||
+    m.indexes.searchShards === null ||
+    !Object.values(m.indexes.searchShards).every(isFileInfo) ||
+    !Array.isArray(m.commonTokens) ||
     !m.chunks.every((c) => isFileInfo(c) && typeof c.category === 'string' && typeof c.count === 'number')
   ) {
     throw new CityPackFormatError('Manifiesto de city pack inválido: estructura incompleta');
   }
   return m;
+}
+
+/** Valida un fragmento de búsqueda parseado. */
+export function assertSearchShard(value: unknown, name: string): SearchShard {
+  const s = value as SearchShard;
+  if (typeof s !== 'object' || s === null || typeof s.tokens !== 'object' || s.tokens === null) {
+    throw new CityPackFormatError(`Fragmento de búsqueda corrupto: ${name}`);
+  }
+  return s;
 }
 
 /** Valida la forma de un trozo ya parseado. */

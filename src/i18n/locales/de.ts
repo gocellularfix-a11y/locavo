@@ -87,6 +87,8 @@ export const de: TranslationCatalog = {
   'explore.emptyGeneric': 'Versuche eine andere Kategorie oder ändere deine Suche.',
   'explore.removeFilter': 'Filter entfernen',
   'explore.seeAll': 'Alle anzeigen',
+  'explore.loadMore': 'Mehr Orte laden',
+  'explore.loadMoreHint': 'Lädt die nächste Ergebnisseite',
 
   'status.open': 'Geöffnet',
   'status.openUntil': 'Geöffnet bis {time}',
@@ -126,6 +128,9 @@ export const de: TranslationCatalog = {
   'place.price.unknown': 'Preis nicht verfügbar',
   'place.source': 'Quelle',
   'place.sourceDemo': 'Demodaten (demo-seed)',
+  'place.sourceDenue': 'INEGI DENUE — Offizielles Unternehmensverzeichnis',
+  'place.datasetUpdated':
+    'Offizielles Verzeichnis aktualisiert am {date}. Betrieb noch nicht einzeln verifiziert.',
   'place.lastVerification': 'Letzte Überprüfung',
   'place.verifiedOn': 'Überprüft am {date}',
   'place.verifiedUnknown': 'Überprüfungsdatum nicht verfügbar',

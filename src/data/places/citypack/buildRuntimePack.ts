@@ -5,33 +5,41 @@ import {
   PLACE_ID_INDEX_PATH,
   RUNTIME_PACK_FORMAT,
   RUNTIME_PACK_SCHEMA_VERSION,
-  SEARCH_INDEX_PATH,
-  type CompactSearchIndex,
+  searchShardKeyOf,
+  searchShardPathOf,
   type GeoBounds,
   type PlaceIdIndex,
   type RuntimeChunkInfo,
+  type RuntimeFileInfo,
   type RuntimePackManifest,
-  type SearchIndexEntry,
+  type SearchPosting,
+  type SearchShard,
 } from './RuntimePackFormat';
 import type { CityPackPlace, CityPackV1 } from '../../import/denue/CityPackBuilder';
-import { normalizeText } from '../../../utils/text';
+import { normalizeText, tokenize } from '../../../utils/text';
 
 /**
- * Generador del paquete de runtime (V4D) — SOLO herramientas/Node.
+ * Generador del paquete de runtime v2 (V4D.1) — SOLO herramientas/Node.
  *
- * Transforma el pack fuente (`culiacan.pack.json`) en trozos por categoría
- * subdivididos por retícula geográfica, más índices compactos y un
- * manifiesto con bytes y SHA-256 de cada archivo.
+ * Cambios frente a v1:
+ * - Trozos por QUADTREE dentro de cada categoría (rectángulos compactos y
+ *   pequeños, ≤50 lugares por defecto): las consultas top-N por cercanía
+ *   cargan pocos trozos en lugar de hidratar la categoría completa.
+ * - Índice de búsqueda INVERTIDO y fragmentado por prefijo: una búsqueda
+ *   normal carga uno o dos fragmentos pequeños, no un índice de 1.87 MB.
  *
- * Determinista: mismas entradas → mismos bytes en cada archivo. El runtime
- * de la app NUNCA importa este módulo (usa node:crypto).
+ * Determinista: mismas entradas → mismos bytes. El runtime nunca importa
+ * este módulo (usa node:crypto).
  */
 
 export interface RuntimePackBuildOptions {
-  /** Máximo de registros por trozo (subdivisión determinista). */
+  /** Máximo de registros por trozo (hoja del quadtree). */
   maxChunkRecords?: number;
-  /** Tamaño de celda de la retícula geográfica en grados (~0.02 ≈ 2.2 km). */
-  gridCellDegrees?: number;
+  /**
+   * Fracción de lugares a partir de la cual un token es "común" y sale del
+   * índice invertido (se resuelve como comodín en runtime).
+   */
+  commonTokenFraction?: number;
 }
 
 export interface RuntimePackFile {
@@ -41,12 +49,18 @@ export interface RuntimePackFile {
 
 export interface RuntimePackBuildResult {
   manifest: RuntimePackManifest;
-  /** Todos los archivos a escribir (manifest.json incluido, al final). */
   files: RuntimePackFile[];
 }
 
-const DEFAULT_MAX_CHUNK_RECORDS = 250;
-const DEFAULT_GRID_CELL_DEGREES = 0.02;
+const DEFAULT_MAX_CHUNK_RECORDS = 50;
+/** Corte de profundidad ante coordenadas degeneradas (todas idénticas). */
+const MAX_QUADTREE_DEPTH = 14;
+/**
+ * Un token presente en ≥15 % de los lugares (p. ej. "culiacan") no aporta
+ * selectividad: sus postings pesarían cientos de KB. Se publica en
+ * manifest.commonTokens y el runtime lo trata como comodín verificado.
+ */
+const DEFAULT_COMMON_TOKEN_FRACTION = 0.15;
 
 function sha256Hex(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex');
@@ -67,9 +81,42 @@ function boundsOf(places: readonly CityPackPlace[]): GeoBounds {
 }
 
 /**
- * Texto de búsqueda compacto del lugar. Espejo de
+ * Partición quadtree determinista: divide por el punto medio del rectángulo
+ * hasta que cada hoja tenga ≤ maxRecords (o profundidad máxima). El orden
+ * de hojas es el recorrido en profundidad SW, SE, NW, NE.
+ */
+function quadtreeLeaves(
+  places: CityPackPlace[],
+  maxRecords: number,
+  depth = 0,
+): CityPackPlace[][] {
+  if (places.length <= maxRecords || depth >= MAX_QUADTREE_DEPTH) {
+    return places.length > 0 ? [places] : [];
+  }
+  const bounds = boundsOf(places);
+  const midLat = (bounds.minLat + bounds.maxLat) / 2;
+  const midLng = (bounds.minLng + bounds.maxLng) / 2;
+  const quadrants: CityPackPlace[][] = [[], [], [], []];
+  for (const place of places) {
+    const north = place.latitude > midLat;
+    const east = place.longitude > midLng;
+    quadrants[(north ? 2 : 0) + (east ? 1 : 0)].push(place);
+  }
+  // Cuadrante degenerado (todos los puntos en el mismo lugar): hoja forzada.
+  if (quadrants.some((q) => q.length === places.length)) {
+    return [places];
+  }
+  const leaves: CityPackPlace[][] = [];
+  for (const quadrant of quadrants) {
+    leaves.push(...quadtreeLeaves(quadrant, maxRecords, depth + 1));
+  }
+  return leaves;
+}
+
+/**
+ * Texto de búsqueda del lugar para el índice invertido. Espejo de
  * domain/search.buildPlaceSearchIndex SIN los términos de la categoría
- * (se re-derivan al consultar a partir de la categoría del trozo).
+ * (la cobertura por categoría se resuelve en runtime).
  */
 export function compactSearchTextOf(place: CityPackPlace): string {
   return normalizeText(
@@ -90,9 +137,7 @@ export function buildRuntimePack(
     throw new Error('Pack fuente inválido: se espera locavo-city-pack v1');
   }
   const maxChunkRecords = options.maxChunkRecords ?? DEFAULT_MAX_CHUNK_RECORDS;
-  const cell = options.gridCellDegrees ?? DEFAULT_GRID_CELL_DEGREES;
 
-  // Agrupar por categoría (orden alfabético determinista).
   const byCategory = new Map<string, CityPackPlace[]>();
   for (const place of pack.places) {
     const list = byCategory.get(place.category) ?? [];
@@ -104,28 +149,12 @@ export function buildRuntimePack(
   const files: RuntimePackFile[] = [];
   const chunkInfos: RuntimeChunkInfo[] = [];
   const idIndex: PlaceIdIndex = { ids: {} };
-  const searchEntries: SearchIndexEntry[] = [];
+  /** token → postings (orden de inserción determinista). */
+  const invertedIndex = new Map<string, SearchPosting[]>();
 
   for (const category of categories) {
-    // Orden por celda geográfica (fila mayor) con orden original estable
-    // dentro de cada celda: los trozos quedan geográficamente compactos.
-    const places = [...byCategory.get(category)!].sort((a, b) => {
-      const rowA = Math.floor(a.latitude / cell);
-      const rowB = Math.floor(b.latitude / cell);
-      if (rowA !== rowB) {
-        return rowA - rowB;
-      }
-      const colA = Math.floor(a.longitude / cell);
-      const colB = Math.floor(b.longitude / cell);
-      if (colA !== colB) {
-        return colA - colB;
-      }
-      return 0; // sort estable: conserva el orden por id del pack fuente
-    });
-
-    for (let start = 0; start < places.length; start += maxChunkRecords) {
-      const chunkPlaces = places.slice(start, start + maxChunkRecords);
-      const chunkNumber = Math.floor(start / maxChunkRecords);
+    const leaves = quadtreeLeaves(byCategory.get(category)!, maxChunkRecords);
+    leaves.forEach((chunkPlaces, chunkNumber) => {
       const name = `categories/${category}/chunk-${String(chunkNumber).padStart(3, '0')}.json`;
       const content = JSON.stringify({ places: chunkPlaces });
       const chunkIndex = chunkInfos.length;
@@ -144,15 +173,64 @@ export function buildRuntimePack(
         if (idIndex.ids[place.id] === undefined) {
           idIndex.ids[place.id] = chunkIndex;
         }
-        searchEntries.push([place.id, chunkIndex, compactSearchTextOf(place)]);
+        const seenTokens = new Set<string>();
+        for (const token of tokenize(compactSearchTextOf(place))) {
+          if (seenTokens.has(token)) {
+            continue;
+          }
+          seenTokens.add(token);
+          const postings = invertedIndex.get(token) ?? [];
+          postings.push([place.id, chunkIndex]);
+          invertedIndex.set(token, postings);
+        }
       }
+    });
+  }
+
+  // Tokens comunes fuera del índice (comodines verificados en runtime).
+  const commonThreshold = Math.max(
+    2,
+    Math.ceil(
+      (options.commonTokenFraction ?? DEFAULT_COMMON_TOKEN_FRACTION) * pack.places.length,
+    ),
+  );
+  const commonTokens: string[] = [];
+  for (const [token, postings] of invertedIndex) {
+    if (postings.length >= commonThreshold) {
+      commonTokens.push(token);
     }
+  }
+  commonTokens.sort();
+  for (const token of commonTokens) {
+    invertedIndex.delete(token);
+  }
+
+  // Fragmentos por prefijo, con tokens ordenados dentro de cada fragmento.
+  const shardTokens = new Map<string, string[]>();
+  for (const token of [...invertedIndex.keys()].sort()) {
+    const key = searchShardKeyOf(token);
+    const list = shardTokens.get(key) ?? [];
+    list.push(token);
+    shardTokens.set(key, list);
+  }
+  const searchShards: Record<string, RuntimeFileInfo> = {};
+  for (const key of [...shardTokens.keys()].sort()) {
+    const shard: SearchShard = { tokens: {} };
+    for (const token of shardTokens.get(key)!) {
+      shard.tokens[token] = invertedIndex.get(token)!;
+    }
+    const path = searchShardPathOf(key);
+    const content = JSON.stringify(shard);
+    files.push({ path, content });
+    searchShards[key] = {
+      name: path,
+      bytes: Buffer.byteLength(content, 'utf8'),
+      sha256: sha256Hex(content),
+    };
   }
 
   const idIndexContent = JSON.stringify(idIndex);
-  const searchIndexContent = JSON.stringify({ entries: searchEntries } satisfies CompactSearchIndex);
   files.push({ path: PLACE_ID_INDEX_PATH, content: idIndexContent });
-  files.push({ path: SEARCH_INDEX_PATH, content: searchIndexContent });
 
   const byCategoryCounts: Record<string, number> = {};
   for (const category of categories) {
@@ -175,17 +253,14 @@ export function buildRuntimePack(
         bytes: Buffer.byteLength(idIndexContent, 'utf8'),
         sha256: sha256Hex(idIndexContent),
       },
-      search: {
-        name: SEARCH_INDEX_PATH,
-        bytes: Buffer.byteLength(searchIndexContent, 'utf8'),
-        sha256: sha256Hex(searchIndexContent),
-      },
+      searchShards,
     },
+    commonTokens,
     chunks: chunkInfos,
   };
 
-  // El manifiesto va al final: en una escritura secuencial interrumpida el
-  // paquete queda sin manifiesto y el runtime cae limpiamente al fallback.
+  // El manifiesto va al final: una escritura interrumpida deja un paquete
+  // sin manifiesto y el runtime cae limpiamente al respaldo local.
   files.push({ path: MANIFEST_PATH, content: JSON.stringify(manifest, null, 2) });
 
   return { manifest, files };

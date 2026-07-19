@@ -11,18 +11,14 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/FeedbackS
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatusBadge } from '../../components/StatusBadge';
-import {
-  confidenceLevelOf,
-  isDemoPlace,
-  primarySourceOf,
-  type LocavoPlace,
-} from '../../domain/places/LocavoPlace';
+import { confidenceLevelOf, type LocavoPlace } from '../../domain/places/LocavoPlace';
 import {
   explainReasonsLocalized,
   formatDistanceLocalized,
   formatTravelTimeLocalized,
-  formatVerifiedDateLocalized,
   priceLevelText,
+  sourceLabelLocalized,
+  verificationTextLocalized,
 } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
@@ -205,12 +201,12 @@ export default function PlaceDetailScreen() {
           <DetailRow
             icon="cloud-outline"
             label={t('place.source')}
-            value={isDemoPlace(place) ? t('place.sourceDemo') : primarySourceOf(place)}
+            value={sourceLabelLocalized(place, locale)}
           />
           <DetailRow
             icon="checkmark-done"
             label={t('place.lastVerification')}
-            value={formatVerifiedDateLocalized(place.verification.lastVerifiedAt, locale)}
+            value={verificationTextLocalized(place.verification, locale)}
           />
         </View>
 

@@ -84,8 +84,42 @@ export interface PlaceVerification {
   status: VerificationStatus;
   /** Confianza 0–1 en la calidad/actualidad del dato. */
   confidence: number;
-  /** ISO-8601 UTC de la última verificación. */
+  /**
+   * Fecha de actualización del DATASET fuente (p. ej. edición DENUE).
+   * NUNCA representa una verificación individual del negocio: el INEGI no
+   * confirma cada ubicación al publicar el directorio.
+   */
+  sourceDatasetUpdatedAt?: string;
+  /** Evidencia observada del lugar específico (visita, foto, web oficial). */
+  evidenceObservedAt?: string;
+  /** Confirmación del propietario del negocio. */
+  ownerConfirmedAt?: string;
+  /** Confirmación de la comunidad. */
+  communityConfirmedAt?: string;
+  /** Verificación individual canónica de Locavo (la más fuerte). */
+  canonicalVerifiedAt?: string;
+  /**
+   * Legado (semilla demo y capa cloud): fecha de verificación individual
+   * simulada/registrada. Para datos derivados de datasets masivos usar
+   * `sourceDatasetUpdatedAt`, jamás este campo.
+   */
   lastVerifiedAt?: string;
+}
+
+/**
+ * Fecha de verificación INDIVIDUAL del lugar, si existe. Las fechas de
+ * dataset (sourceDatasetUpdatedAt) quedan explícitamente excluidas.
+ */
+export function individualVerificationDateOf(
+  verification: PlaceVerification,
+): string | undefined {
+  return (
+    verification.canonicalVerifiedAt ??
+    verification.ownerConfirmedAt ??
+    verification.communityConfirmedAt ??
+    verification.evidenceObservedAt ??
+    verification.lastVerifiedAt
+  );
 }
 
 export interface PlaceProvenanceEntry {

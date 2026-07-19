@@ -87,6 +87,8 @@ export const pt: TranslationCatalog = {
   'explore.emptyGeneric': 'Tente outra categoria ou mude sua busca.',
   'explore.removeFilter': 'Remover filtro',
   'explore.seeAll': 'Ver tudo',
+  'explore.loadMore': 'Carregar mais lugares',
+  'explore.loadMoreHint': 'Carrega a próxima página de resultados',
 
   'status.open': 'Aberto',
   'status.openUntil': 'Aberto até {time}',
@@ -126,6 +128,9 @@ export const pt: TranslationCatalog = {
   'place.price.unknown': 'Preço não disponível',
   'place.source': 'Fonte',
   'place.sourceDemo': 'Dados de demonstração (demo-seed)',
+  'place.sourceDenue': 'INEGI DENUE — Diretório oficial de unidades econômicas',
+  'place.datasetUpdated':
+    'Diretório oficial atualizado em {date}. Negócio ainda sem verificação individual.',
   'place.lastVerification': 'Última verificação',
   'place.verifiedOn': 'Verificado em {date}',
   'place.verifiedUnknown': 'Data de verificação não disponível',

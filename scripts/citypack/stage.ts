@@ -48,7 +48,7 @@ function main(): void {
   const manifest = assertRuntimeManifest(JSON.parse(readFileSync(manifestPath, 'utf8')));
   const filesToStage: RuntimeFileInfo[] = [
     manifest.indexes.placeId,
-    manifest.indexes.search,
+    ...Object.values(manifest.indexes.searchShards),
     ...manifest.chunks,
   ];
   for (const file of filesToStage) {

@@ -87,6 +87,8 @@ export const fr: TranslationCatalog = {
   'explore.emptyGeneric': 'Essayez une autre catégorie ou modifiez votre recherche.',
   'explore.removeFilter': 'Retirer le filtre',
   'explore.seeAll': 'Tout voir',
+  'explore.loadMore': 'Charger plus de lieux',
+  'explore.loadMoreHint': 'Charge la page de résultats suivante',
 
   'status.open': 'Ouvert',
   'status.openUntil': "Ouvert jusqu'à {time}",
@@ -126,6 +128,9 @@ export const fr: TranslationCatalog = {
   'place.price.unknown': 'Prix non disponible',
   'place.source': 'Source',
   'place.sourceDemo': 'Données de démonstration (demo-seed)',
+  'place.sourceDenue': 'INEGI DENUE — Répertoire officiel des unités économiques',
+  'place.datasetUpdated':
+    'Répertoire officiel mis à jour le {date}. Établissement pas encore vérifié individuellement.',
   'place.lastVerification': 'Dernière vérification',
   'place.verifiedOn': 'Vérifié le {date}',
   'place.verifiedUnknown': 'Date de vérification non disponible',

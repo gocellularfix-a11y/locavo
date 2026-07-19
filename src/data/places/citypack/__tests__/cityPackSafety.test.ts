@@ -112,6 +112,12 @@ describe('seguridad del milestone V4D', () => {
     }
   });
 
+  it('el mapa de Explorar tiene tope explícito de marcadores (sin acumulación)', () => {
+    const source = read('src/app/(tabs)/explore.tsx');
+    expect(source).toMatch(/MAX_MAP_MARKERS = 200/);
+    expect(source).toMatch(/results\.slice\(0, MAX_MAP_MARKERS\)/);
+  });
+
   it('las pantallas siguen sin importar Supabase ni Google Places', () => {
     for (const screen of [
       'src/app/(tabs)/index.tsx',

@@ -17,15 +17,22 @@ export interface PlacesQueryOptions {
 
 export interface PlacesQueryResult {
   status: QueryStatus;
-  /** Resultados ordenados; el primero es la recomendación principal. */
+  /** Páginas acumuladas ordenadas; el primero es la recomendación principal. */
   results: ScoredPlace[];
   recommended: ScoredPlace | null;
+  /** true mientras se carga una página adicional (no la inicial). */
+  loadingMore: boolean;
+  /** true cuando el repositorio anuncia más resultados. */
+  hasMore: boolean;
+  /** Carga la siguiente página y la anexa sin duplicados. */
+  loadMore: () => void;
   reload: () => void;
 }
 
 /**
- * Puente pantalla ↔ PlaceSearchService (V3).
- * Las pantallas nunca tocan repositorios ni datos mock directamente.
+ * Puente pantalla ↔ PlaceSearchService (V3, paginado en V4D.1).
+ * Cambiar categoría, búsqueda, filtros o ubicación REINICIA la paginación:
+ * los resultados anteriores se sueltan (no se acumulan entre consultas).
  */
 export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryResult {
   const { coords } = useLocationState();
@@ -33,6 +40,8 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
 
   const [results, setResults] = useState<ScoredPlace[]>([]);
   const [status, setStatus] = useState<QueryStatus>('loading');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [reloadToken, setReloadToken] = useState(0);
   const requestSeq = useRef(0);
 
@@ -50,11 +59,14 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
       .then((response) => {
         if (!cancelled && seq === requestSeq.current) {
           setResults(response.results);
+          setNextCursor(response.nextCursor);
+          setLoadingMore(false);
           setStatus('ready');
         }
       })
       .catch(() => {
         if (!cancelled && seq === requestSeq.current) {
+          setLoadingMore(false);
           setStatus('error');
         }
       });
@@ -62,6 +74,39 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
       cancelled = true;
     };
   }, [coords, category, query, openOnly, sort, reloadToken]);
+
+  const loadMore = useCallback(() => {
+    if (!nextCursor || loadingMore || status !== 'ready') {
+      return;
+    }
+    const seq = requestSeq.current;
+    setLoadingMore(true);
+    placeSearchService
+      .search({
+        origin: coords,
+        category,
+        text: query,
+        openNow: openOnly,
+        sort,
+        cursor: nextCursor,
+      })
+      .then((response) => {
+        if (seq === requestSeq.current) {
+          setResults((previous) => {
+            const seen = new Set(previous.map((scored) => scored.place.id));
+            const fresh = response.results.filter((scored) => !seen.has(scored.place.id));
+            return [...previous, ...fresh];
+          });
+          setNextCursor(response.nextCursor);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (seq === requestSeq.current) {
+          setLoadingMore(false);
+        }
+      });
+  }, [nextCursor, loadingMore, status, coords, category, query, openOnly, sort]);
 
   const reload = useCallback(() => {
     setStatus('loading');
@@ -72,6 +117,9 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
     status,
     results,
     recommended: results.length > 0 ? results[0] : null,
+    loadingMore,
+    hasMore: nextCursor !== undefined,
+    loadMore,
     reload,
   };
 }

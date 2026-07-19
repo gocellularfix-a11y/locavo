@@ -58,7 +58,12 @@ function main(): void {
   console.log(`lugares:       ${manifest.totalPlaces}`);
   console.log(`trozos:        ${manifest.chunks.length}`);
   console.log(`índice ids:    ${(manifest.indexes.placeId.bytes / 1024).toFixed(1)} KB`);
-  console.log(`índice búsq.:  ${(manifest.indexes.search.bytes / 1024).toFixed(1)} KB`);
+  const shards = Object.values(manifest.indexes.searchShards);
+  const shardBytes = shards.reduce((sum, s) => sum + s.bytes, 0);
+  console.log(
+    `índice búsq.:  ${shards.length} fragmentos, ${(shardBytes / 1024).toFixed(1)} KB total ` +
+      `(máx ${(Math.max(...shards.map((s) => s.bytes)) / 1024).toFixed(1)} KB)`,
+  );
   const chunkBytes = manifest.chunks.reduce((sum, c) => sum + c.bytes, 0);
   console.log(`trozos total:  ${(chunkBytes / 1024 / 1024).toFixed(2)} MB`);
   console.log(`paquete total: ${(totalBytes / 1024 / 1024).toFixed(2)} MB`);

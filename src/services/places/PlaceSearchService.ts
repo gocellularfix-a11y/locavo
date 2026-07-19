@@ -19,10 +19,14 @@ export interface PlaceSearchRequest {
   openNow?: boolean;
   sort?: 'best' | 'distance';
   limit?: number;
+  /** Cursor opaco de la página anterior (paginación V4D.1). */
+  cursor?: string;
 }
 
 export interface PlaceSearchResponse {
   results: ScoredPlace[];
+  /** Presente cuando hay más resultados; pásalo en la siguiente petición. */
+  nextCursor?: string;
 }
 
 const DEFAULT_NEARBY_RADIUS_M = 20_000;
@@ -35,7 +39,7 @@ export class PlaceSearchService {
   ) {}
 
   async search(request: PlaceSearchRequest): Promise<PlaceSearchResponse> {
-    const { origin, category = null, text = '', openNow = false, sort = 'best' } = request;
+    const { origin, category = null, text = '', openNow = false, sort = 'best', cursor } = request;
     const trimmed = text.trim();
 
     this.analytics.track({
@@ -45,6 +49,7 @@ export class PlaceSearchService {
     });
 
     let places: LocavoPlace[];
+    let nextCursor: string | undefined;
     try {
       if (trimmed.length > 0) {
         const result = await this.repository.searchText({
@@ -53,23 +58,29 @@ export class PlaceSearchService {
           longitude: origin.longitude,
           categories: category ? [category] : undefined,
           limit: FETCH_LIMIT,
+          cursor,
         });
         places = result.places;
+        nextCursor = result.nextCursor;
       } else if (category) {
         const result = await this.repository.listByCategory(category, {
           latitude: origin.latitude,
           longitude: origin.longitude,
           limit: FETCH_LIMIT,
+          cursor,
         });
         places = result.places;
+        nextCursor = result.nextCursor;
       } else {
         const result = await this.repository.searchNearby({
           latitude: origin.latitude,
           longitude: origin.longitude,
           radiusMeters: DEFAULT_NEARBY_RADIUS_M,
           limit: FETCH_LIMIT,
+          cursor,
         });
         places = result.places;
+        nextCursor = result.nextCursor;
       }
     } catch (error) {
       this.analytics.track({
@@ -96,7 +107,7 @@ export class PlaceSearchService {
       metadata: { resultCount: ranked.length },
     });
 
-    return { results: ranked };
+    return nextCursor !== undefined ? { results: ranked, nextCursor } : { results: ranked };
   }
 
   async getById(id: string): Promise<LocavoPlace | null> {

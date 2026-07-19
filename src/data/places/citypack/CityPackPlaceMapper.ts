@@ -54,7 +54,9 @@ export function cityPackPlaceToLocavoPlace(place: CityPackPlace): LocavoPlace {
     verification: {
       status: verification.status,
       confidence: verification.confidence,
-      lastVerifiedAt: timestamp,
+      // Fecha de la EDICIÓN del dataset, nunca verificación individual:
+      // el directorio oficial no confirma cada negocio uno por uno.
+      sourceDatasetUpdatedAt: timestamp,
     },
     provenance: place.sources.map((source) => ({
       source: source.provider,

@@ -85,6 +85,8 @@ export const en: TranslationCatalog = {
   'explore.emptyGeneric': 'Try another category or change your search.',
   'explore.removeFilter': 'Remove filter',
   'explore.seeAll': 'See all',
+  'explore.loadMore': 'Load more places',
+  'explore.loadMoreHint': 'Loads the next page of results',
 
   'status.open': 'Open',
   'status.openUntil': 'Open until {time}',
@@ -124,6 +126,9 @@ export const en: TranslationCatalog = {
   'place.price.unknown': 'Price not available',
   'place.source': 'Source',
   'place.sourceDemo': 'Demo data (demo-seed)',
+  'place.sourceDenue': 'INEGI DENUE — Official business directory',
+  'place.datasetUpdated':
+    'Official directory updated on {date}. Business not yet individually verified.',
   'place.lastVerification': 'Last verification',
   'place.verifiedOn': 'Verified on {date}',
   'place.verifiedUnknown': 'Verification date not available',

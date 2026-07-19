@@ -1,7 +1,15 @@
 import { translateIn } from './I18nContext';
 import type { SupportedLocale } from './types';
 import { formatTime12h, type OpenStatus } from '../domain/openingHours';
-import type { ConfidenceLevel, PriceLevel } from '../domain/places/LocavoPlace';
+import {
+  individualVerificationDateOf,
+  isDemoPlace,
+  primarySourceOf,
+  type ConfidenceLevel,
+  type LocavoPlace,
+  type PlaceVerification,
+  type PriceLevel,
+} from '../domain/places/LocavoPlace';
 import type { RecommendationReason } from '../services/places/PlaceRankingService';
 import type { LocationFailureReason } from '../services/location';
 
@@ -54,22 +62,69 @@ export function formatTravelTimeLocalized(minutes: number, locale: SupportedLoca
   return translateIn(locale, 'format.travelTime', { min: minutes });
 }
 
-export function formatVerifiedDateLocalized(
-  iso: string | undefined,
-  locale: SupportedLocale,
-): string {
-  const timestamp = iso ? Date.parse(iso) : Number.NaN;
+function formatDateOnly(iso: string, locale: SupportedLocale): string | null {
+  const timestamp = Date.parse(iso);
   if (Number.isNaN(timestamp)) {
-    return translateIn(locale, 'place.verifiedUnknown');
+    return null;
   }
   const date = new Date(timestamp);
   const months = translateIn(locale, 'format.months').split('|');
-  const formatted = translateIn(locale, 'format.date', {
+  return translateIn(locale, 'format.date', {
     day: date.getUTCDate(),
     month: months[date.getUTCMonth()] ?? String(date.getUTCMonth() + 1),
     year: date.getUTCFullYear(),
   });
+}
+
+export function formatVerifiedDateLocalized(
+  iso: string | undefined,
+  locale: SupportedLocale,
+): string {
+  const formatted = iso ? formatDateOnly(iso, locale) : null;
+  if (!formatted) {
+    return translateIn(locale, 'place.verifiedUnknown');
+  }
   return translateIn(locale, 'place.verifiedOn', { date: formatted });
+}
+
+/**
+ * Texto veraz de verificación (V4D.1):
+ * - verificación INDIVIDUAL real → "Verificado el {fecha}";
+ * - solo fecha de dataset (p. ej. edición DENUE) → "Directorio oficial
+ *   actualizado el {fecha}; negocio aún sin verificación individual".
+ *   La fecha de publicación de un dataset masivo JAMÁS se presenta como
+ *   verificación del negocio.
+ */
+export function verificationTextLocalized(
+  verification: PlaceVerification,
+  locale: SupportedLocale,
+): string {
+  const individual = individualVerificationDateOf(verification);
+  if (individual) {
+    return formatVerifiedDateLocalized(individual, locale);
+  }
+  if (verification.sourceDatasetUpdatedAt) {
+    const formatted = formatDateOnly(verification.sourceDatasetUpdatedAt, locale);
+    if (formatted) {
+      return translateIn(locale, 'place.datasetUpdated', { date: formatted });
+    }
+  }
+  return translateIn(locale, 'place.verifiedUnknown');
+}
+
+/** Etiqueta veraz de la fuente del lugar. */
+export function sourceLabelLocalized(place: LocavoPlace, locale: SupportedLocale): string {
+  if (isDemoPlace(place)) {
+    return translateIn(locale, 'place.sourceDemo');
+  }
+  const source = primarySourceOf(place);
+  if (source === 'denue') {
+    return translateIn(locale, 'place.sourceDenue');
+  }
+  if (source === 'openstreetmap') {
+    return 'OpenStreetMap';
+  }
+  return source;
 }
 
 export function priceLevelText(

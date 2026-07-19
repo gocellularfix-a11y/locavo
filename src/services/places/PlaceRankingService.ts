@@ -1,7 +1,7 @@
 import { estimateTravelMinutes, haversineKm } from '../../domain/distance';
 import { evaluateOpenStatus, type OpenStatus } from '../../domain/openingHours';
 import type { Coordinates } from '../../domain/place';
-import type { LocavoPlace } from '../../domain/places/LocavoPlace';
+import { individualVerificationDateOf, type LocavoPlace } from '../../domain/places/LocavoPlace';
 
 /**
  * Ranking local, determinista y explicable sobre el modelo canónico.
@@ -44,7 +44,9 @@ export function completenessOf(place: LocavoPlace): number {
 }
 
 function daysSinceVerified(place: LocavoPlace, now: Date): number {
-  const iso = place.verification.lastVerifiedAt;
+  // Solo cuenta la verificación INDIVIDUAL del lugar; la fecha de edición
+  // de un dataset masivo (DENUE) no hace "recién verificado" a un negocio.
+  const iso = individualVerificationDateOf(place.verification);
   const verified = iso ? Date.parse(iso) : Number.NaN;
   if (Number.isNaN(verified)) {
     return Number.POSITIVE_INFINITY;

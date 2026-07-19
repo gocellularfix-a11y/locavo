@@ -3,13 +3,14 @@ import { cityPackPlaceToLocavoPlace } from './CityPackPlaceMapper';
 import {
   assertRuntimeChunk,
   assertRuntimeManifest,
+  assertSearchShard,
   MANIFEST_PATH,
   minDistanceToBoundsKm,
   PLACE_ID_INDEX_PATH,
-  SEARCH_INDEX_PATH,
-  type CompactSearchIndex,
+  searchShardKeyOf,
   type PlaceIdIndex,
   type RuntimePackManifest,
+  type SearchShard,
 } from './RuntimePackFormat';
 import { getCategoryMeta } from '../../../domain/categories';
 import { haversineKm } from '../../../domain/distance';
@@ -30,34 +31,44 @@ import {
 import type { PlaceSearchResult } from '../PlaceSearchResult';
 
 /**
- * Repositorio de runtime del city pack (V4D).
+ * Repositorio de runtime del city pack v2 (V4D.1).
  *
  * Perezoso y neutral al proveedor: carga primero el manifiesto (pequeño) y
- * después SOLO los índices/trozos que la operación necesita. Nunca parsea
- * el pack completo. Caché acotada LRU de trozos hidratados.
+ * después SOLO los índices/trozos que la operación necesita. Los trozos son
+ * hojas quadtree compactas (≤50 lugares): las consultas top-N por cercanía
+ * cargan pocos trozos con corte temprano exacto, y la búsqueda usa un
+ * índice invertido fragmentado (uno o dos fragmentos por consulta).
  *
  * Resiliencia: cualquier problema del pack (ausente, corrupto, esquema no
- * soportado) degrada automáticamente esa llamada al repositorio local de
+ * soportado, fragmento dañado) degrada esa llamada al repositorio local de
  * respaldo. Inicio y Explorar nunca se caen por un problema de datos.
+ *
+ * Nota de acotación: para consultas paginadas el `total` reportado puede
+ * ser el número de coincidencias CARGADAS (cota inferior) en vez del total
+ * global — el precio explícito de no hidratar categorías completas. Los
+ * consumidores actuales solo usan `places`/`nextCursor`.
  */
 
 const DEFAULT_MAX_CACHED_CHUNKS = 12;
+const DEFAULT_MAX_CACHED_SHARDS = 6;
 /** Margen sobre la distancia mínima aproximada al rectángulo del trozo. */
 const BOUNDS_SLACK_KM = 0.75;
 
 export interface CityPackRepositoryOptions {
   maxCachedChunks?: number;
+  maxCachedShards?: number;
 }
 
 export class CityPackRepository implements PlaceRepository {
   private manifest: RuntimePackManifest | null = null;
   private idIndex: PlaceIdIndex | null = null;
-  private searchIndex: CompactSearchIndex | null = null;
   private manifestPromise: Promise<RuntimePackManifest> | null = null;
   private unavailable = false;
   private warned = false;
   private readonly chunkCache = new Map<number, LocavoPlace[]>();
+  private readonly shardCache = new Map<string, SearchShard>();
   private readonly maxCachedChunks: number;
+  private readonly maxCachedShards: number;
 
   constructor(
     private readonly loader: CityPackAssetLoader,
@@ -65,6 +76,7 @@ export class CityPackRepository implements PlaceRepository {
     options: CityPackRepositoryOptions = {},
   ) {
     this.maxCachedChunks = options.maxCachedChunks ?? DEFAULT_MAX_CACHED_CHUNKS;
+    this.maxCachedShards = options.maxCachedShards ?? DEFAULT_MAX_CACHED_SHARDS;
   }
 
   // ── Contrato PlaceRepository ─────────────────────────────────────────
@@ -92,6 +104,8 @@ export class CityPackRepository implements PlaceRepository {
       const origin = { latitude: q.latitude, longitude: q.longitude };
       const radiusKm = q.radiusMeters / 1000;
       const now = new Date();
+      const offset = q.cursor ? Number.parseInt(q.cursor, 10) || 0 : 0;
+      const needed = offset + q.limit;
 
       const relevant = manifest.chunks
         .map((chunk, index) => ({ chunk, index }))
@@ -102,21 +116,34 @@ export class CityPackRepository implements PlaceRepository {
             radiusKm + BOUNDS_SLACK_KM,
         );
 
-      const merged = await this.loadChunks(manifest, relevant.map((r) => r.index));
-      let matches = merged.filter(
-        (place) => haversineKm(origin, place.coordinates) * 1000 <= q.radiusMeters,
+      const accept = (place: LocavoPlace): boolean => {
+        if (haversineKm(origin, place.coordinates) * 1000 > q.radiusMeters) {
+          return false;
+        }
+        return !q.openNow || evaluateOpenStatus(place.hours ?? null, now).state === 'open';
+      };
+      // Carga incremental por cercanía del trozo con corte temprano exacto:
+      // nunca se hidratan trozos que ya no pueden aportar a la página pedida.
+      const { places, exhausted } = await this.loadTopKByProximity(
+        manifest,
+        relevant,
+        origin,
+        needed,
+        accept,
       );
-      if (q.openNow) {
-        matches = matches.filter(
-          (place) => evaluateOpenStatus(place.hours ?? null, now).state === 'open',
-        );
-      }
-      matches.sort(
+      places.sort(
         (a, b) =>
           haversineKm(origin, a.coordinates) - haversineKm(origin, b.coordinates) ||
           (a.id < b.id ? -1 : 1),
       );
-      return paginate(matches, q.limit, q.cursor);
+      const page = places.slice(offset, offset + q.limit);
+      const nextOffset = offset + page.length;
+      const hasMore = !exhausted || nextOffset < places.length;
+      return {
+        places: page,
+        total: places.length,
+        nextCursor: hasMore && page.length > 0 ? String(nextOffset) : undefined,
+      };
     } catch (error) {
       this.warnOnce(error);
       return this.fallback.searchNearby(query);
@@ -127,9 +154,11 @@ export class CityPackRepository implements PlaceRepository {
     const q = validateTextQuery(query);
     try {
       const manifest = await this.ensureManifest();
-      const index = await this.ensureSearchIndex(manifest);
       const tokens = tokenize(q.text);
       const phraseCategories = aliasCategoriesOf(q.text);
+      const offset = q.cursor ? Number.parseInt(q.cursor, 10) || 0 : 0;
+      const needed = offset + q.limit;
+      const allCategories = Object.keys(manifest.byCategory) as LocavoCategory[];
       const categoryTermsCache = new Map<LocavoCategory, string>();
       const categoryTermsOf = (category: LocavoCategory): string => {
         let terms = categoryTermsCache.get(category);
@@ -140,39 +169,116 @@ export class CityPackRepository implements PlaceRepository {
         return terms;
       };
 
-      const candidateIds = new Set<string>();
-      const candidateChunks = new Set<number>();
-      for (const [id, chunkIndex, text] of index.entries) {
-        const category = manifest.chunks[chunkIndex]?.category;
-        if (category === undefined) {
-          continue;
+      // Cobertura por categoría de cada token: alias multilenguaje,
+      // término de la categoría, o token COMÚN del pack (comodín: p. ej.
+      // "culiacan" aparece en casi todos los lugares y no lleva postings).
+      const isWildcard = (token: string): boolean =>
+        manifest.commonTokens.some((common) => common.startsWith(token));
+      const coveredByToken = tokens.map((token) =>
+        isWildcard(token)
+          ? new Set(allCategories)
+          : new Set(
+              allCategories.filter(
+                (category) =>
+                  aliasCategoriesOf(token).includes(category) ||
+                  categoryTermsOf(category).includes(token),
+              ),
+            ),
+      );
+      const fullyCoveredCategories = allCategories.filter(
+        (category) =>
+          (q.categories === undefined || q.categories.includes(category)) &&
+          (phraseCategories.includes(category) ||
+            (tokens.length > 0 && coveredByToken.every((covered) => covered.has(category)))),
+      );
+
+      // Candidatos por token vía fragmentos del índice invertido (prefijo
+      // de palabra). Solo se cargan los fragmentos de las letras usadas.
+      const postingsByToken: Map<string, number>[] = [];
+      for (const token of tokens) {
+        const found = new Map<string, number>();
+        const shard = await this.loadShard(manifest, searchShardKeyOf(token));
+        if (shard) {
+          for (const [indexToken, postings] of Object.entries(shard.tokens)) {
+            if (indexToken.startsWith(token)) {
+              for (const [id, chunkIndex] of postings) {
+                found.set(id, chunkIndex);
+              }
+            }
+          }
         }
-        if (q.categories && !q.categories.includes(category)) {
-          continue;
-        }
-        const matches =
-          tokens.length === 0 ||
-          phraseCategories.includes(category) ||
-          tokens.every(
-            (token) =>
-              text.includes(token) ||
-              categoryTermsOf(category).includes(token) ||
-              aliasCategoriesOf(token).includes(category),
+        postingsByToken.push(found);
+      }
+
+      // Un id califica si CADA token lo alcanza por índice o por cobertura
+      // de su categoría (semántica de placeMatchesQuery).
+      const idCandidates = new Map<string, number>();
+      for (let i = 0; i < postingsByToken.length; i++) {
+        for (const [id, chunkIndex] of postingsByToken[i]) {
+          if (idCandidates.has(id)) {
+            continue;
+          }
+          const category = manifest.chunks[chunkIndex]?.category;
+          if (category === undefined) {
+            continue;
+          }
+          if (q.categories && !q.categories.includes(category)) {
+            continue;
+          }
+          const qualifies = tokens.every(
+            (_token, t) => postingsByToken[t].has(id) || coveredByToken[t].has(category),
           );
-        if (matches) {
-          candidateIds.add(id);
-          candidateChunks.add(chunkIndex);
+          if (qualifies) {
+            idCandidates.set(id, chunkIndex);
+          }
         }
       }
 
-      const merged = await this.loadChunks(manifest, [...candidateChunks].sort((a, b) => a - b));
-      // Verificación final con la búsqueda de dominio: paridad exacta.
-      let matches = merged.filter(
-        (place) => candidateIds.has(place.id) && placeMatchesQuery(place, q.text),
-      );
-      if (q.categories && q.categories.length > 0) {
-        matches = matches.filter((place) => q.categories!.includes(place.category));
+      const seen = new Map<string, LocavoPlace>();
+      const candidateChunks = [...new Set(idCandidates.values())].sort((a, b) => a - b);
+      for (const chunkIndex of candidateChunks) {
+        for (const place of await this.loadChunk(manifest, chunkIndex)) {
+          // Verificación final exacta contra la búsqueda de dominio.
+          if (
+            idCandidates.has(place.id) &&
+            !seen.has(place.id) &&
+            placeMatchesQuery(place, q.text)
+          ) {
+            seen.set(place.id, place);
+          }
+        }
       }
+
+      // Categorías totalmente cubiertas (p. ej. "tacos" cubre comida):
+      // carga acotada top-N por cercanía, jamás la categoría completa.
+      let exhausted = true;
+      if (fullyCoveredCategories.length > 0) {
+        const refs = manifest.chunks
+          .map((chunk, index) => ({ chunk, index }))
+          .filter(({ chunk }) => fullyCoveredCategories.includes(chunk.category));
+        if (q.latitude !== undefined && q.longitude !== undefined) {
+          const origin = { latitude: q.latitude, longitude: q.longitude };
+          const topK = await this.loadTopKByProximity(
+            manifest,
+            refs,
+            origin,
+            needed,
+            (place) => placeMatchesQuery(place, q.text),
+            seen,
+          );
+          exhausted = topK.exhausted;
+        } else {
+          for (const { index } of refs) {
+            for (const place of await this.loadChunk(manifest, index)) {
+              if (!seen.has(place.id) && placeMatchesQuery(place, q.text)) {
+                seen.set(place.id, place);
+              }
+            }
+          }
+        }
+      }
+
+      const matches = [...seen.values()];
       if (q.latitude !== undefined && q.longitude !== undefined) {
         const origin = { latitude: q.latitude, longitude: q.longitude };
         matches.sort(
@@ -183,7 +289,14 @@ export class CityPackRepository implements PlaceRepository {
       } else {
         matches.sort((a, b) => (a.id < b.id ? -1 : 1));
       }
-      return paginate(matches, q.limit, q.cursor);
+      const page = matches.slice(offset, offset + q.limit);
+      const nextOffset = offset + page.length;
+      const hasMore = !exhausted || nextOffset < matches.length;
+      return {
+        places: page,
+        total: matches.length,
+        nextCursor: hasMore && page.length > 0 ? String(nextOffset) : undefined,
+      };
     } catch (error) {
       this.warnOnce(error);
       return this.fallback.searchText(query);
@@ -211,42 +324,22 @@ export class CityPackRepository implements PlaceRepository {
       const offset = opts.cursor ? Number.parseInt(opts.cursor, 10) || 0 : 0;
       const needed = offset + opts.limit;
 
-      // Trozos por cercanía de su rectángulo; se deja de cargar cuando el
-      // siguiente trozo ya no puede aportar nada al top-N solicitado.
-      const ordered = [...categoryChunks].sort(
-        (a, b) =>
-          minDistanceToBoundsKm(origin.latitude, origin.longitude, a.chunk.bounds) -
-          minDistanceToBoundsKm(origin.latitude, origin.longitude, b.chunk.bounds),
+      // Trozos por cercanía de su rectángulo con corte temprano exacto:
+      // la primera página de una categoría no hidrata la categoría entera.
+      const { places } = await this.loadTopKByProximity(
+        manifest,
+        categoryChunks,
+        origin,
+        needed,
+        () => true,
       );
-
-      const seen = new Map<string, LocavoPlace>();
-      const distances: number[] = [];
-      for (const { chunk, index } of ordered) {
-        if (seen.size >= needed) {
-          distances.sort((a, b) => a - b);
-          const kth = distances[needed - 1];
-          const minPossible =
-            minDistanceToBoundsKm(origin.latitude, origin.longitude, chunk.bounds) -
-            BOUNDS_SLACK_KM;
-          if (minPossible > kth) {
-            break;
-          }
-        }
-        for (const place of await this.loadChunk(manifest, index)) {
-          if (!seen.has(place.id)) {
-            seen.set(place.id, place);
-            distances.push(haversineKm(origin, place.coordinates));
-          }
-        }
-      }
-
-      const merged = [...seen.values()].sort(
+      places.sort(
         (a, b) =>
           haversineKm(origin, a.coordinates) - haversineKm(origin, b.coordinates) ||
           (a.id < b.id ? -1 : 1),
       );
-      const page = merged.slice(offset, offset + opts.limit);
-      const total = manifest.byCategory[category] ?? merged.length;
+      const page = places.slice(offset, offset + opts.limit);
+      const total = manifest.byCategory[category] ?? places.length;
       const nextOffset = offset + page.length;
       return {
         places: page,
@@ -295,16 +388,80 @@ export class CityPackRepository implements PlaceRepository {
     return this.idIndex;
   }
 
-  private async ensureSearchIndex(manifest: RuntimePackManifest): Promise<CompactSearchIndex> {
-    if (!this.searchIndex) {
-      const raw = await this.loader.load(manifest.indexes.search.name ?? SEARCH_INDEX_PATH);
-      const parsed = JSON.parse(raw) as CompactSearchIndex;
-      if (typeof parsed !== 'object' || parsed === null || !Array.isArray(parsed.entries)) {
-        throw new CityPackAssetError('Índice de búsqueda corrupto');
-      }
-      this.searchIndex = parsed;
+  /**
+   * Carga un fragmento del índice de búsqueda (caché LRU acotada). Un
+   * fragmento inexistente en el manifiesto (letra sin tokens) devuelve
+   * null; un fragmento anunciado pero ilegible/corrupto lanza (→ respaldo).
+   */
+  private async loadShard(
+    manifest: RuntimePackManifest,
+    key: string,
+  ): Promise<SearchShard | null> {
+    const info = manifest.indexes.searchShards[key];
+    if (!info) {
+      return null;
     }
-    return this.searchIndex;
+    const cached = this.shardCache.get(key);
+    if (cached) {
+      this.shardCache.delete(key);
+      this.shardCache.set(key, cached);
+      return cached;
+    }
+    const raw = await this.loader.load(info.name);
+    const shard = assertSearchShard(JSON.parse(raw), info.name);
+    this.shardCache.set(key, shard);
+    while (this.shardCache.size > this.maxCachedShards) {
+      const oldest = this.shardCache.keys().next().value as string;
+      this.shardCache.delete(oldest);
+    }
+    return shard;
+  }
+
+  /**
+   * Carga trozos en orden de cercanía de su rectángulo al origen, con
+   * corte temprano exacto: se detiene cuando el siguiente trozo ya no
+   * puede aportar nada al top-`needed` (considerando el margen del
+   * rectángulo). `exhausted` indica si se agotaron los trozos relevantes.
+   */
+  private async loadTopKByProximity(
+    manifest: RuntimePackManifest,
+    chunkRefs: readonly { chunk: RuntimePackManifest['chunks'][number]; index: number }[],
+    origin: { latitude: number; longitude: number },
+    needed: number,
+    accept: (place: LocavoPlace) => boolean,
+    seed?: Map<string, LocavoPlace>,
+  ): Promise<{ places: LocavoPlace[]; exhausted: boolean }> {
+    const ordered = [...chunkRefs].sort(
+      (a, b) =>
+        minDistanceToBoundsKm(origin.latitude, origin.longitude, a.chunk.bounds) -
+        minDistanceToBoundsKm(origin.latitude, origin.longitude, b.chunk.bounds),
+    );
+    const seen = seed ?? new Map<string, LocavoPlace>();
+    const distances: number[] = [];
+    for (const place of seen.values()) {
+      distances.push(haversineKm(origin, place.coordinates));
+    }
+    let exhausted = true;
+    for (const { chunk, index } of ordered) {
+      if (seen.size >= needed) {
+        distances.sort((a, b) => a - b);
+        const kth = distances[needed - 1];
+        const minPossible =
+          minDistanceToBoundsKm(origin.latitude, origin.longitude, chunk.bounds) -
+          BOUNDS_SLACK_KM;
+        if (minPossible > kth) {
+          exhausted = false;
+          break;
+        }
+      }
+      for (const place of await this.loadChunk(manifest, index)) {
+        if (!seen.has(place.id) && accept(place)) {
+          seen.set(place.id, place);
+          distances.push(haversineKm(origin, place.coordinates));
+        }
+      }
+    }
+    return { places: [...seen.values()], exhausted };
   }
 
   private async loadChunk(

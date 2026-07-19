@@ -1,24 +1,56 @@
-import { fakeLoaderFrom, fixturePack, loadsWhere } from './fixtures';
+import { fakeLoaderFrom, fixturePack, fixturePlace, loadsWhere } from './fixtures';
 import { buildRuntimePack } from '../buildRuntimePack';
 import { CityPackRepository } from '../CityPackRepository';
-import { MANIFEST_PATH, SEARCH_INDEX_PATH } from '../RuntimePackFormat';
+import { MANIFEST_PATH, SEARCH_SHARD_DIR } from '../RuntimePackFormat';
 import { cityPackPlaceToLocavoPlace } from '../CityPackPlaceMapper';
+import type { CityPackPlace } from '../../../import/denue/CityPackBuilder';
 import { LocalPlaceRepository } from '../../LocalPlaceRepository';
 import { InvalidPlaceQueryError } from '../../PlaceQuery';
 
 const CENTER = { latitude: 24.8069, longitude: -107.394 };
 
-function makeRepo(options?: { maxCachedChunks?: number; maxChunkRecords?: number }) {
-  const { files } = buildRuntimePack(fixturePack(), {
+function makeRepo(options?: {
+  maxCachedChunks?: number;
+  maxChunkRecords?: number;
+  places?: CityPackPlace[];
+}) {
+  const pack = fixturePack(options?.places);
+  const { files, manifest } = buildRuntimePack(pack, {
     maxChunkRecords: options?.maxChunkRecords ?? 1,
+    // Umbral relativo alto para que el fixture pequeño conserve postings
+    // selectivos (en el pack real el default 0.15 aplica sobre 12k lugares).
+    commonTokenFraction: 0.5,
   });
   const fake = fakeLoaderFrom(files);
   const fallback = new LocalPlaceRepository();
   const repo = new CityPackRepository(fake.loader, fallback, {
     maxCachedChunks: options?.maxCachedChunks,
   });
-  return { repo, fake, fallback };
+  return { repo, fake, fallback, manifest, pack };
 }
+
+/** 40 lugares de comida repartidos en una malla amplia (~9 km). */
+function manyFoodPlaces(): CityPackPlace[] {
+  const places: CityPackPlace[] = [];
+  for (let i = 0; i < 40; i++) {
+    places.push(
+      fixturePlace({
+        id: `denue-${1000 + i}`,
+        name: `FONDA ${i}`,
+        normalizedName: `fonda ${i}`,
+        latitude: 24.76 + 0.02 * (i % 5),
+        longitude: -107.44 + 0.02 * Math.floor(i / 5),
+        searchTerms: ['fonda'],
+      }),
+    );
+  }
+  return places;
+}
+
+const shardLoads = (loads: Map<string, number>) =>
+  loadsWhere(loads, (p) => p.startsWith(SEARCH_SHARD_DIR));
+const chunkLoads = (loads: Map<string, number>) =>
+  loadsWhere(loads, (p) => p.startsWith('categories/'));
 
 beforeEach(() => {
   jest.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -27,22 +59,25 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('CityPackRepository — carga perezosa', () => {
+describe('CityPackRepository v2 — carga perezosa', () => {
   it('getById carga manifiesto + índice de ids + EXACTAMENTE un trozo', async () => {
     const { repo, fake } = makeRepo();
     const place = await repo.getById('denue-200');
     expect(place?.name).toBe('CAFÉ DOÑA ÑOÑA');
-    expect(loadsWhere(fake.loads, (p) => p.startsWith('categories/'))).toBe(1);
-    expect(fake.loads.get(SEARCH_INDEX_PATH)).toBeUndefined();
+    expect(chunkLoads(fake.loads)).toBe(1);
+    expect(shardLoads(fake.loads)).toBe(0);
   });
 
-  it('getById preserva procedencia (sourceRefs y provenance del proveedor)', async () => {
+  it('getById preserva procedencia y no inventa verificación individual', async () => {
     const { repo } = makeRepo();
     const place = await repo.getById('denue-100');
     expect(place?.sourceRefs.denueId).toBe('100');
     expect(place?.provenance[0].source).toBe('denue');
     expect(place?.verification.status).toBe('source_verified');
-    // Sin datos inventados: ni horarios ni precios ni calificaciones.
+    // La fecha de la edición del dataset NO es verificación individual.
+    expect(place?.verification.sourceDatasetUpdatedAt).toBe('2026-07-01T00:00:00.000Z');
+    expect(place?.verification.canonicalVerifiedAt).toBeUndefined();
+    expect(place?.verification.lastVerifiedAt).toBeUndefined();
     expect(place?.hours).toBeUndefined();
     expect(place?.price).toBeUndefined();
   });
@@ -55,76 +90,120 @@ describe('CityPackRepository — carga perezosa', () => {
     expect(loadsWhere(fake.loads, (p) => p.includes('/beer/'))).toBe(0);
   });
 
-  it('listByCategory con origen limita trozos: no carga lejanos si el top-N ya está resuelto', async () => {
-    const { repo, fake } = makeRepo();
-    // Con límite 1 desde el centro, el trozo norte de coffee no aporta nada.
-    const result = await repo.listByCategory('coffee', { ...CENTER, limit: 1 });
-    expect(result.places[0].id).toBe('denue-200');
-    expect(loadsWhere(fake.loads, (p) => p.includes('/coffee/'))).toBe(1);
+  it('la primera página de una categoría grande NO hidrata la categoría completa', async () => {
+    const { repo, fake, manifest } = makeRepo({
+      places: manyFoodPlaces(),
+      maxChunkRecords: 5,
+    });
+    const totalFoodChunks = manifest.chunks.filter((c) => c.category === 'food').length;
+    expect(totalFoodChunks).toBeGreaterThanOrEqual(8);
+
+    const page = await repo.listByCategory('food', { ...CENTER, limit: 5 });
+    expect(page.places.length).toBe(5);
+    // Corte temprano: solo los trozos cercanos (más el margen del
+    // rectángulo), nunca toda la categoría.
+    expect(chunkLoads(fake.loads)).toBeLessThan(totalFoodChunks);
+    expect(chunkLoads(fake.loads)).toBeLessThanOrEqual(5);
   });
 
-  it('searchText usa el índice compacto y solo hidrata trozos candidatos', async () => {
+  it('paginación determinista sin duplicados entre páginas', async () => {
+    const { repo } = makeRepo({ places: manyFoodPlaces(), maxChunkRecords: 5 });
+    const page1 = await repo.listByCategory('food', { ...CENTER, limit: 5 });
+    expect(page1.nextCursor).toBeDefined();
+    const page2 = await repo.listByCategory('food', {
+      ...CENTER,
+      limit: 5,
+      cursor: page1.nextCursor,
+    });
+    const ids1 = page1.places.map((p) => p.id);
+    const ids2 = page2.places.map((p) => p.id);
+    expect(new Set([...ids1, ...ids2]).size).toBe(10);
+
+    // Determinista: repetir la secuencia da exactamente lo mismo.
+    const { repo: repo2 } = makeRepo({ places: manyFoodPlaces(), maxChunkRecords: 5 });
+    const again1 = await repo2.listByCategory('food', { ...CENTER, limit: 5 });
+    expect(again1.places.map((p) => p.id)).toEqual(ids1);
+  });
+
+  it('searchText carga SOLO el fragmento del prefijo y los trozos candidatos', async () => {
     const { repo, fake } = makeRepo();
-    // "dona" solo aparece en el nombre de CAFÉ DOÑA ÑOÑA (no es término de
-    // categoría): un único candidato → un único trozo hidratado.
     const result = await repo.searchText({ text: 'dona', ...CENTER, limit: 10 });
     expect(result.places.map((p) => p.id)).toEqual(['denue-200']);
-    expect(fake.loads.get(SEARCH_INDEX_PATH)).toBe(1);
-    expect(loadsWhere(fake.loads, (p) => p.startsWith('categories/'))).toBe(1);
+    expect(shardLoads(fake.loads)).toBe(1);
+    expect(loadsWhere(fake.loads, (p) => p.includes('prefix-d.json'))).toBe(1);
+    expect(chunkLoads(fake.loads)).toBe(1);
   });
 
-  it('la búsqueda con acentos y ñ encuentra nombres reales (CAFÉ → cafe)', async () => {
+  it('búsqueda multi-token intersecta candidatos (fragmentos por letra)', async () => {
+    const { repo, fake } = makeRepo();
+    const result = await repo.searchText({ text: 'cafe dona', ...CENTER, limit: 10 });
+    expect(result.places.map((p) => p.name)).toEqual(['CAFÉ DOÑA ÑOÑA']);
+    expect(loadsWhere(fake.loads, (p) => p.includes('prefix-c.json'))).toBe(1);
+    expect(loadsWhere(fake.loads, (p) => p.includes('prefix-d.json'))).toBe(1);
+  });
+
+  it('acentos y ñ: CAFÉ/DOÑA con y sin acentos encuentran lo mismo', async () => {
     const { repo } = makeRepo();
-    const byAccent = await repo.searchText({ text: 'CAFÉ DOÑA', limit: 10 });
-    expect(byAccent.places.map((p) => p.name)).toEqual(['CAFÉ DOÑA ÑOÑA']);
-    const byAlias = await repo.searchText({ text: 'beer', limit: 10 });
+    const accented = await repo.searchText({ text: 'CAFÉ DOÑA', ...CENTER, limit: 10 });
+    const plain = await repo.searchText({ text: 'cafe dona', ...CENTER, limit: 10 });
+    expect(accented.places.map((p) => p.id)).toEqual(['denue-200']);
+    expect(plain.places.map((p) => p.id)).toEqual(accented.places.map((p) => p.id));
+  });
+
+  it('token común (comodín, p. ej. "obregon" en dirección) sigue encontrando con verificación exacta', async () => {
+    const { repo, manifest } = makeRepo();
+    expect(manifest.commonTokens).toContain('obregon');
+    const result = await repo.searchText({ text: 'obregon dona', ...CENTER, limit: 10 });
+    // 'obregon' es comodín (todas las direcciones), 'dona' restringe.
+    expect(result.places.map((p) => p.id)).toEqual(['denue-200']);
+  });
+
+  it('alias de categoría ("beer") con carga acotada por cercanía', async () => {
+    const { repo } = makeRepo();
+    const byAlias = await repo.searchText({ text: 'beer', ...CENTER, limit: 10 });
     expect(byAlias.places.every((p) => p.category === 'beer')).toBe(true);
     expect(byAlias.places.length).toBe(2);
   });
 
   it('searchNearby carga solo trozos cuyo rectángulo toca el radio', async () => {
     const { repo, fake } = makeRepo();
-    // Radio 1 km desde el centro: los trozos del norte (~3.7 km) no se tocan.
     const result = await repo.searchNearby({ ...CENTER, radiusMeters: 1000, limit: 10 });
     expect(result.places.map((p) => p.id).sort()).toEqual(['denue-100', 'denue-200', 'denue-300']);
-    expect(loadsWhere(fake.loads, (p) => p.startsWith('categories/'))).toBe(3);
+    expect(chunkLoads(fake.loads)).toBe(3);
   });
 
-  it('ranking determinista: mismos resultados y orden en corridas repetidas', async () => {
-    const run = async () => {
-      const { repo } = makeRepo();
-      const r = await repo.searchText({ text: 'norte', ...CENTER, limit: 10 });
-      return r.places.map((p) => p.id);
-    };
-    const first = await run();
-    expect(first).toEqual(await run());
-    expect(first.length).toBe(3);
+  it('searchNearby pagina de forma acotada (no hidrata todo el radio)', async () => {
+    const { repo, fake, manifest } = makeRepo({ places: manyFoodPlaces(), maxChunkRecords: 5 });
+    const page = await repo.searchNearby({ ...CENTER, radiusMeters: 20_000, limit: 5 });
+    expect(page.places.length).toBe(5);
+    expect(page.nextCursor).toBeDefined();
+    expect(chunkLoads(fake.loads)).toBeLessThan(manifest.chunks.length);
   });
 });
 
-describe('CityPackRepository — caché acotada', () => {
-  it('una consulta repetida reutiliza el trozo cacheado (sin recargas)', async () => {
+describe('CityPackRepository v2 — cachés acotadas', () => {
+  it('consulta repetida reutiliza trozo y fragmento cacheados', async () => {
     const { repo, fake } = makeRepo();
-    await repo.getById('denue-100');
-    const loadsAfterFirst = loadsWhere(fake.loads, (p) => p.startsWith('categories/'));
-    await repo.getById('denue-100');
-    await repo.getById('denue-100');
-    expect(loadsWhere(fake.loads, (p) => p.startsWith('categories/'))).toBe(loadsAfterFirst);
+    await repo.searchText({ text: 'dona', ...CENTER, limit: 5 });
+    const chunksAfter = chunkLoads(fake.loads);
+    const shardsAfter = shardLoads(fake.loads);
+    await repo.searchText({ text: 'dona', ...CENTER, limit: 5 });
+    expect(chunkLoads(fake.loads)).toBe(chunksAfter);
+    expect(shardLoads(fake.loads)).toBe(shardsAfter);
     expect(fake.loads.get(MANIFEST_PATH)).toBe(1);
   });
 
   it('desaloja el trozo más antiguo al exceder el límite de caché', async () => {
     const { repo, fake } = makeRepo({ maxCachedChunks: 1 });
-    await repo.getById('denue-100'); // trozo A
-    await repo.getById('denue-200'); // trozo B desaloja A
-    await repo.getById('denue-100'); // A se recarga
-    const chunkLoads = loadsWhere(fake.loads, (p) => p.startsWith('categories/'));
-    expect(chunkLoads).toBe(3);
+    await repo.getById('denue-100');
+    await repo.getById('denue-200');
+    await repo.getById('denue-100');
+    expect(chunkLoads(fake.loads)).toBe(3);
   });
 });
 
-describe('CityPackRepository — degradación segura al repositorio local', () => {
-  it('pack ausente → responde el respaldo local (Inicio nunca se cae)', async () => {
+describe('CityPackRepository v2 — degradación segura al repositorio local', () => {
+  it('pack ausente → responde el respaldo local', async () => {
     const fake = fakeLoaderFrom([]);
     const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
     const nearby = await repo.searchNearby({ ...CENTER, radiusMeters: 5000, limit: 5 });
@@ -138,7 +217,6 @@ describe('CityPackRepository — degradación segura al repositorio local', () =
     fake.set(MANIFEST_PATH, '{esto no es json');
     const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
     const result = await repo.listByCategory('food', { ...CENTER, limit: 3 });
-    expect(result.places.length).toBeGreaterThan(0);
     expect(result.places[0].name).toContain('Demo');
   });
 
@@ -147,7 +225,25 @@ describe('CityPackRepository — degradación segura al repositorio local', () =
     const fake = fakeLoaderFrom(files);
     fake.set(MANIFEST_PATH, JSON.stringify({ ...manifest, schemaVersion: 99 }));
     const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
-    const result = await repo.searchText({ text: 'tacos', limit: 5 });
+    const result = await repo.searchText({ text: 'tacos', ...CENTER, limit: 5 });
+    expect(result.places.every((p) => p.name.includes('Demo'))).toBe(true);
+  });
+
+  it('fragmento de búsqueda corrupto → respaldo local para esa llamada', async () => {
+    const { files, manifest } = buildRuntimePack(fixturePack());
+    const fake = fakeLoaderFrom(files);
+    fake.set(manifest.indexes.searchShards['d'].name, '{"tokens": 42}');
+    const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
+    const result = await repo.searchText({ text: 'dona', ...CENTER, limit: 5 });
+    expect(result.places.every((p) => p.name.includes('Demo'))).toBe(true);
+  });
+
+  it('fragmento anunciado pero AUSENTE → respaldo local sin lanzar', async () => {
+    const { files, manifest } = buildRuntimePack(fixturePack());
+    const fake = fakeLoaderFrom(files);
+    fake.remove(manifest.indexes.searchShards['d'].name);
+    const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
+    const result = await repo.searchText({ text: 'dona', ...CENTER, limit: 5 });
     expect(result.places.every((p) => p.name.includes('Demo'))).toBe(true);
   });
 
@@ -158,7 +254,6 @@ describe('CityPackRepository — degradación segura al repositorio local', () =
     fake.set(foodChunk.name, '{"places": "corrupto"}');
     const repo = new CityPackRepository(fake.loader, new LocalPlaceRepository());
     const result = await repo.listByCategory('food', { ...CENTER, limit: 3 });
-    expect(result.places.length).toBeGreaterThan(0);
     expect(result.places[0].name).toContain('Demo');
   });
 
@@ -171,7 +266,7 @@ describe('CityPackRepository — degradación segura al repositorio local', () =
   });
 });
 
-describe('CityPackRepository — paridad con la búsqueda de dominio', () => {
+describe('CityPackRepository v2 — paridad con LocalPlaceRepository', () => {
   it('searchText coincide con LocalPlaceRepository sobre los mismos datos', async () => {
     const pack = fixturePack();
     const { files } = buildRuntimePack(pack, { maxChunkRecords: 2 });
@@ -181,7 +276,7 @@ describe('CityPackRepository — paridad con la búsqueda de dominio', () => {
     );
     const localRepo = new LocalPlaceRepository(pack.places.map(cityPackPlaceToLocavoPlace));
 
-    for (const text of ['cafe', 'norte', 'cerveza', 'tacos centro', 'coffee']) {
+    for (const text of ['cafe', 'norte', 'cerveza', 'tacos centro', 'coffee', 'doña']) {
       const fromPack = await cityRepo.searchText({ text, ...CENTER, limit: 20 });
       const fromLocal = await localRepo.searchText({ text, ...CENTER, limit: 20 });
       expect(fromPack.places.map((p) => p.id)).toEqual(fromLocal.places.map((p) => p.id));
@@ -207,5 +302,25 @@ describe('CityPackRepository — paridad con la búsqueda de dominio', () => {
       expect(byCatPack.places.map((p) => p.id)).toEqual(byCatLocal.places.map((p) => p.id));
       expect(byCatPack.total).toBe(byCatLocal.total);
     }
+  });
+
+  it('paginación multi-página coincide con el orden global de LocalPlaceRepository', async () => {
+    const places = manyFoodPlaces();
+    const { files } = buildRuntimePack(fixturePack(places), { maxChunkRecords: 5 });
+    const cityRepo = new CityPackRepository(
+      fakeLoaderFrom(files).loader,
+      new LocalPlaceRepository([]),
+    );
+    const localRepo = new LocalPlaceRepository(places.map(cityPackPlaceToLocavoPlace));
+
+    const cityIds: string[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < 3; i++) {
+      const page = await cityRepo.listByCategory('food', { ...CENTER, limit: 5, cursor });
+      cityIds.push(...page.places.map((p) => p.id));
+      cursor = page.nextCursor;
+    }
+    const local = await localRepo.listByCategory('food', { ...CENTER, limit: 15 });
+    expect(cityIds).toEqual(local.places.map((p) => p.id));
   });
 });
