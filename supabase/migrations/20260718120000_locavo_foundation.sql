@@ -496,6 +496,13 @@ begin
 end;
 $$;
 
+-- Privilegios de tabla: desde CLI v2.109 las entidades nuevas de `public` NO
+-- se exponen automáticamente (default "always-revoked"); la lectura pública
+-- requiere GRANT explícito. RLS sigue decidiendo qué filas son visibles.
+grant select on public.places, public.place_source_refs,
+                public.place_provenance, public.place_localized_content
+  to anon, authenticated;
+
 -- Permisos de ejecución: solo las RPCs de lectura para clientes públicos.
 grant execute on function public.place_by_id(text) to anon, authenticated;
 grant execute on function public.places_nearby(double precision, double precision, double precision, text[], int, int) to anon, authenticated;

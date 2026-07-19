@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-import type { Database, PublicPlaceResult } from './database.types';
+import type { Database } from './database.types';
 import { CloudRepositoryError } from './errors';
 import type { SupabaseConfig } from '../../config/supabaseConfig';
 
@@ -14,6 +14,10 @@ import type { SupabaseConfig } from '../../config/supabaseConfig';
  *   (Locavo no tiene cuentas todavía).
  * - Nunca se registran claves en logs.
  */
+
+/** Fila que devuelven las RPC públicas, derivada de los tipos generados. */
+export type PublicPlaceResult =
+  Database['public']['Functions']['place_by_id']['Returns'][number];
 
 /** Transporte estrecho que usa el repositorio (fácil de simular en pruebas). */
 export interface CloudRpcTransport {
