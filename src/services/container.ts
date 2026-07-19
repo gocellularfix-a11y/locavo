@@ -1,6 +1,7 @@
 import { exposeFlagsForDevInspection, FEATURE_FLAGS, getDataMode } from '../config/featureFlags';
 import { createPlaceRepository } from '../data/places/createPlaceRepository';
 import type { PlaceRepository } from '../data/places/PlaceRepository';
+import { SurprisePlaceService } from '../features/home/surprise';
 import {
   exposeForDevInspection,
   LocalAnalyticsService,
@@ -30,5 +31,8 @@ export const dataMode = getDataMode(FEATURE_FLAGS);
 export const placeRepository: PlaceRepository = createPlaceRepository();
 
 export const placeSearchService = new PlaceSearchService(placeRepository, analytics);
+
+/** "Sorpréndeme" (V4A.2): usa el MISMO repositorio activo (local hoy). */
+export const surprisePlaceService = new SurprisePlaceService(placeRepository);
 
 export const navigationProvider: NavigationProvider = googleMapsProvider;

@@ -23,7 +23,12 @@ export const es = {
   // Inicio
   'home.heroTitle': '¿Qué necesitas ahora?',
   'home.tagline': 'No busques. Decide.',
-  'home.searchPlaceholder': 'Buscar tacos, café, farmacia...',
+  'home.searchPlaceholder': '¿Qué estás buscando?',
+  'home.searchExamples': 'Tacos, hoteles, cerveza...',
+  'home.surprise': 'Sorpréndeme',
+  'home.surpriseHint': 'Locavo elige por ti un buen lugar cercano según la hora',
+  'home.surpriseEmpty':
+    'No encontramos un lugar para sorprenderte ahora. Te llevamos a explorar.',
   'home.useMyLocation': 'Usar mi ubicación actual',
   'home.gettingLocation': 'Obteniendo ubicación…',
   'home.useMyLocationHint': 'Pide permiso de ubicación y usa tu posición actual una sola vez',
@@ -34,6 +39,29 @@ export const es = {
   'home.locationLine': 'Culiacán · {label} · Cambiar',
   'home.locationA11y': 'Ubicación: Culiacán, {label}. Cambiar ubicación',
   'home.themeToggleA11y': 'Cambiar tema. Actual: {mode}',
+
+  // Sugerencias contextuales del hero (rotación por franja horaria)
+  'suggest.morning.1': '☕ Buenos días. ¿Un café?',
+  'suggest.morning.2': '🥐 Algo para desayunar',
+  'suggest.morning.3': '💊 ¿Necesitas una farmacia?',
+  'suggest.lunch.1': '🌮 ¿Hora de comer?',
+  'suggest.lunch.2': '🍔 Tengo hambre',
+  'suggest.lunch.3': '🍜 Algo bueno cerca',
+  'suggest.afternoon.1': '☕ Necesito café',
+  'suggest.afternoon.2': '🍰 Algo dulce',
+  'suggest.afternoon.3': '🍺 Una cerveza fría',
+  'suggest.evening.1': '🍺 ¿Dónde salir esta noche?',
+  'suggest.evening.2': '🌮 Algo para cenar',
+  'suggest.evening.3': '🏨 ¿Buscas dónde dormir?',
+  'suggest.evening.4': '🌙 Lugares abiertos ahora',
+  'suggest.lateNight.1': '🌙 Lugares abiertos ahora',
+  'suggest.lateNight.2': '🍔 Tengo hambre',
+  'suggest.lateNight.3': '🏨 Busco dónde dormir',
+  'suggest.general.1': '🍔 Tengo hambre',
+  'suggest.general.2': '🍺 Quiero una cerveza',
+  'suggest.general.3': '☕ Necesito café',
+  'suggest.general.4': '🏨 Busco dónde dormir',
+  'suggest.general.5': '📍 Algo bueno cerca de mí',
 
   // Ubicación
   'location.current': 'Tu ubicación actual',
@@ -225,7 +253,7 @@ export const es = {
   'support.intro': 'Respuestas rápidas a las dudas más comunes de esta fase de demostración.',
   'support.enable.title': '¿Cómo activo mi ubicación?',
   'support.enable.b1':
-    'En Inicio, toca "Usar mi ubicación actual" y acepta el permiso cuando el sistema lo pida.',
+    'En Inicio, toca el botón de ubicación junto a tu zona y acepta el permiso cuando el sistema lo pida.',
   'support.enable.b2':
     'Si antes lo rechazaste, actívalo desde los ajustes del sistema: busca Locavo en Aplicaciones → Permisos → Ubicación.',
   'support.manual.title': '¿Y si no quiero compartir mi ubicación?',

@@ -15,7 +15,12 @@ export const de: TranslationCatalog = {
 
   'home.heroTitle': 'Was brauchst du gerade?',
   'home.tagline': 'Nicht suchen. Entscheiden.',
-  'home.searchPlaceholder': 'Tacos, Kaffee, Apotheke suchen...',
+  'home.searchPlaceholder': 'Wonach suchst du?',
+  'home.searchExamples': 'Tacos, Hotels, Bier...',
+  'home.surprise': 'Überrasch mich',
+  'home.surpriseHint': 'Locavo wählt je nach Uhrzeit einen guten Ort in deiner Nähe für dich aus',
+  'home.surpriseEmpty':
+    'Wir haben gerade keinen Ort zum Überraschen gefunden. Wir bringen dich zum Entdecken.',
   'home.useMyLocation': 'Meinen aktuellen Standort verwenden',
   'home.gettingLocation': 'Standort wird ermittelt…',
   'home.useMyLocationHint': 'Fragt die Standortberechtigung an und liest deine Position einmalig',
@@ -26,6 +31,28 @@ export const de: TranslationCatalog = {
   'home.locationLine': 'Culiacán · {label} · Ändern',
   'home.locationA11y': 'Standort: Culiacán, {label}. Standort ändern',
   'home.themeToggleA11y': 'Design wechseln. Aktuell: {mode}',
+
+  'suggest.morning.1': '☕ Guten Morgen. Einen Kaffee?',
+  'suggest.morning.2': '🥐 Etwas zum Frühstück',
+  'suggest.morning.3': '💊 Brauchst du eine Apotheke?',
+  'suggest.lunch.1': '🌮 Zeit zum Essen?',
+  'suggest.lunch.2': '🍔 Ich habe Hunger',
+  'suggest.lunch.3': '🍜 Etwas Gutes in der Nähe',
+  'suggest.afternoon.1': '☕ Ich brauche Kaffee',
+  'suggest.afternoon.2': '🍰 Etwas Süßes',
+  'suggest.afternoon.3': '🍺 Ein kaltes Bier',
+  'suggest.evening.1': '🍺 Wo heute Abend ausgehen?',
+  'suggest.evening.2': '🌮 Etwas zum Abendessen',
+  'suggest.evening.3': '🏨 Suchst du eine Unterkunft?',
+  'suggest.evening.4': '🌙 Jetzt geöffnete Orte',
+  'suggest.lateNight.1': '🌙 Jetzt geöffnete Orte',
+  'suggest.lateNight.2': '🍔 Ich habe Hunger',
+  'suggest.lateNight.3': '🏨 Ich suche eine Unterkunft',
+  'suggest.general.1': '🍔 Ich habe Hunger',
+  'suggest.general.2': '🍺 Ich möchte ein Bier',
+  'suggest.general.3': '☕ Ich brauche Kaffee',
+  'suggest.general.4': '🏨 Ich suche eine Unterkunft',
+  'suggest.general.5': '📍 Etwas Gutes in meiner Nähe',
 
   'location.current': 'Dein aktueller Standort',
   'location.failure.denied':
@@ -202,7 +229,7 @@ export const de: TranslationCatalog = {
   'support.intro': 'Schnelle Antworten auf die häufigsten Fragen dieser Demophase.',
   'support.enable.title': 'Wie aktiviere ich meinen Standort?',
   'support.enable.b1':
-    'Tippe auf der Startseite auf „Meinen aktuellen Standort verwenden“ und akzeptiere die Berechtigung.',
+    'Tippe auf der Startseite auf die Standort-Schaltfläche neben deiner Zone und akzeptiere die Berechtigung.',
   'support.enable.b2':
     'Wenn du sie zuvor abgelehnt hast, aktiviere sie in den Systemeinstellungen: Locavo unter Apps → Berechtigungen → Standort.',
   'support.manual.title': 'Und wenn ich meinen Standort nicht teilen möchte?',

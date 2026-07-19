@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
@@ -11,17 +11,21 @@ import { LocavoWordmark } from '../../components/LocavoWordmark';
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
-import { SearchField } from '../../components/SearchField';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
+import { FeaturedCategoryCard } from '../../features/home/FeaturedCategoryCard';
+import { SmartHero } from '../../features/home/SmartHero';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
-import { analytics } from '../../services/container';
+import { analytics, surprisePlaceService } from '../../services/container';
 import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
-import { spacing } from '../../theme/tokens';
+import { radii, spacing } from '../../theme/tokens';
+
+/** Jerarquía visual: las primeras 4 categorías del catálogo son destacadas. */
+const FEATURED_COUNT = 4;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -30,21 +34,26 @@ export default function HomeScreen() {
   const location = useLocationState();
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
+  const [surprising, setSurprising] = useState(false);
+  const [surpriseFallback, setSurpriseFallback] = useState(false);
 
   const { status, recommended } = usePlacesQuery();
   const directions = useDirections();
 
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
+  const requestingLocation = location.requestState === 'requesting';
 
+  const featured = CATEGORIES.slice(0, FEATURED_COUNT);
+  const compact = CATEGORIES.slice(FEATURED_COUNT);
   const columns = width >= 720 ? 4 : 2;
-  const rows = useMemo(() => {
+  const compactRows = useMemo(() => {
     const grouped: CategoryMeta[][] = [];
-    for (let i = 0; i < CATEGORIES.length; i += columns) {
-      grouped.push(CATEGORIES.slice(i, i + columns));
+    for (let i = 0; i < compact.length; i += columns) {
+      grouped.push(compact.slice(i, i + columns));
     }
     return grouped;
-  }, [columns]);
+  }, [compact, columns]);
 
   useEffect(() => {
     if (recommended) {
@@ -71,6 +80,34 @@ export default function HomeScreen() {
     router.push({ pathname: '/explore', params: { category: category.id } });
   };
 
+  const surpriseMe = async () => {
+    if (surprising) {
+      return;
+    }
+    setSurprising(true);
+    setSurpriseFallback(false);
+    try {
+      const place = await surprisePlaceService.surprise({ origin: location.coords });
+      if (place) {
+        analytics.track({
+          eventName: 'recommendation_shown',
+          placeId: place.id,
+          category: place.category,
+          metadata: { screen: 'home', trigger: 'surprise' },
+        });
+        router.push(`/place/${place.id}`);
+      } else {
+        setSurpriseFallback(true);
+        router.push('/explore');
+      }
+    } catch {
+      setSurpriseFallback(true);
+      router.push('/explore');
+    } finally {
+      setSurprising(false);
+    }
+  };
+
   const navigateTo = (scored: ScoredPlace) => {
     directions.navigateTo(scored.place);
   };
@@ -89,92 +126,131 @@ export default function HomeScreen() {
   return (
     <ScreenContainer>
       <View style={{ gap: spacing.xxl }}>
-        {/* Encabezado ligero */}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
-          <View style={{ flex: 1, gap: spacing.xs }}>
-            <LocavoWordmark />
+        {/* Encabezado de marca */}
+        <View style={{ gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <LocavoWordmark />
+            </View>
+            <Pressable
+              onPress={cycleTheme}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.themeToggleA11y', { mode: themeModeShort })}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: pressed ? colors.neutralSoft : colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+              })}
+            >
+              <Ionicons name={themeIcon} size={20} color={colors.textPrimary} />
+            </Pressable>
+          </View>
+
+          {/* Fila compacta de ubicación: zona + acción de GPS en una línea */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <Pressable
               onPress={() => router.push('/settings')}
               accessibilityRole="button"
               accessibilityLabel={t('home.locationA11y', { label: locationLabel })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+              hitSlop={8}
+              style={{
+                flexShrink: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                minHeight: 32,
+              }}
             >
               <Ionicons name="location" size={14} color={colors.brand} />
-              <AppText variant="caption" tone="secondary">
+              <AppText variant="caption" tone="secondary" numberOfLines={1}>
                 {t('home.locationLine', { label: locationLabel })}
               </AppText>
             </Pressable>
-          </View>
-          <Pressable
-            onPress={cycleTheme}
-            accessibilityRole="button"
-            accessibilityLabel={t('home.themeToggleA11y', { mode: themeModeShort })}
-            hitSlop={8}
-            style={({ pressed }) => ({
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: pressed ? colors.neutralSoft : colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-            })}
-          >
-            <Ionicons name={themeIcon} size={20} color={colors.textPrimary} />
-          </Pressable>
-        </View>
-
-        {/* Hero */}
-        <View style={{ gap: spacing.xs }}>
-          <AppText variant="display" accessibilityRole="header">
-            {t('home.heroTitle')}
-          </AppText>
-          <AppText variant="bodyStrong" tone="brand">
-            {t('home.tagline')}
-          </AppText>
-        </View>
-
-        {/* Búsqueda */}
-        <SearchField value={search} onChangeText={setSearch} onSubmit={submitSearch} />
-
-        {/* Ubicación actual */}
-        {location.source === 'manual' ? (
-          <View style={{ gap: spacing.sm }}>
-            <AppButton
-              label={
-                location.requestState === 'requesting'
-                  ? t('home.gettingLocation')
-                  : t('home.useMyLocation')
-              }
-              variant="secondary"
-              icon="locate"
-              disabled={location.requestState === 'requesting'}
-              onPress={() => {
-                location.useCurrentLocation();
-              }}
-              accessibilityHint={t('home.useMyLocationHint')}
-            />
-            {location.requestState === 'failed' && location.failureReason ? (
-              <AppText
-                variant="caption"
-                tone="secondary"
-                accessibilityRole="alert"
-                accessibilityLiveRegion="polite"
+            {location.source === 'manual' ? (
+              <Pressable
+                onPress={() => {
+                  location.useCurrentLocation();
+                }}
+                disabled={requestingLocation}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  requestingLocation ? t('home.gettingLocation') : t('home.useMyLocation')
+                }
+                accessibilityHint={t('home.useMyLocationHint')}
+                accessibilityState={{ disabled: requestingLocation, busy: requestingLocation }}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  height: 32,
+                  minWidth: 44,
+                  paddingHorizontal: spacing.sm,
+                  borderRadius: radii.chip,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: pressed ? colors.neutralSoft : colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  opacity: requestingLocation ? 0.6 : 1,
+                })}
               >
-                {locationFailureText(
-                  location.failureReason,
-                  location.manualLocation.label,
-                  locale,
+                {requestingLocation ? (
+                  <ActivityIndicator size="small" color={colors.brand} />
+                ) : (
+                  <Ionicons name="locate" size={16} color={colors.brand} />
                 )}
-              </AppText>
+              </Pressable>
             ) : null}
           </View>
-        ) : null}
+          {location.requestState === 'failed' && location.failureReason ? (
+            <AppText
+              variant="caption"
+              tone="secondary"
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+            >
+              {locationFailureText(location.failureReason, location.manualLocation.label, locale)}
+            </AppText>
+          ) : null}
+        </View>
 
-        {/* Categorías */}
+        {/* Hero vivo: sugerencia contextual + Sorpréndeme + búsqueda */}
+        <SmartHero
+          search={search}
+          onSearchChange={setSearch}
+          onSearchSubmit={submitSearch}
+          onSurprise={surpriseMe}
+          surprising={surprising}
+          fallbackMessage={surpriseFallback ? t('home.surpriseEmpty') : null}
+        />
+
+        {/* Categorías: destacadas (2 niveles) + retícula compacta */}
         <View style={{ gap: spacing.md }}>
-          {rows.map((row, rowIndex) => (
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            {featured.slice(0, 2).map((category) => (
+              <FeaturedCategoryCard
+                key={category.id}
+                category={category}
+                emphasis="large"
+                onPress={openCategory}
+              />
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            {featured.slice(2, 4).map((category) => (
+              <FeaturedCategoryCard
+                key={category.id}
+                category={category}
+                emphasis="medium"
+                onPress={openCategory}
+              />
+            ))}
+          </View>
+          {compactRows.map((row, rowIndex) => (
             <View key={rowIndex} style={{ flexDirection: 'row', gap: spacing.md }}>
               {row.map((category) => (
                 <CategoryCard key={category.id} category={category} onPress={openCategory} />

@@ -15,7 +15,12 @@ export const fr: TranslationCatalog = {
 
   'home.heroTitle': 'De quoi avez-vous besoin maintenant ?',
   'home.tagline': 'Ne cherchez pas. Décidez.',
-  'home.searchPlaceholder': 'Chercher tacos, café, pharmacie...',
+  'home.searchPlaceholder': 'Que cherchez-vous ?',
+  'home.searchExamples': 'Tacos, hôtels, bière...',
+  'home.surprise': 'Surprends-moi',
+  'home.surpriseHint': 'Locavo choisit pour vous un bon endroit à proximité selon l’heure',
+  'home.surpriseEmpty':
+    'Aucun lieu à vous proposer pour le moment. Nous vous emmenons explorer.',
   'home.useMyLocation': 'Utiliser ma position actuelle',
   'home.gettingLocation': 'Localisation en cours…',
   'home.useMyLocationHint': 'Demande la permission de localisation et lit votre position une seule fois',
@@ -26,6 +31,28 @@ export const fr: TranslationCatalog = {
   'home.locationLine': 'Culiacán · {label} · Changer',
   'home.locationA11y': 'Position : Culiacán, {label}. Changer de position',
   'home.themeToggleA11y': 'Changer de thème. Actuel : {mode}',
+
+  'suggest.morning.1': '☕ Bonjour. Un café ?',
+  'suggest.morning.2': '🥐 Quelque chose pour le petit-déjeuner',
+  'suggest.morning.3': '💊 Besoin d’une pharmacie ?',
+  'suggest.lunch.1': '🌮 L’heure de manger ?',
+  'suggest.lunch.2': '🍔 J’ai faim',
+  'suggest.lunch.3': '🍜 Quelque chose de bon à proximité',
+  'suggest.afternoon.1': '☕ J’ai besoin d’un café',
+  'suggest.afternoon.2': '🍰 Quelque chose de sucré',
+  'suggest.afternoon.3': '🍺 Une bière fraîche',
+  'suggest.evening.1': '🍺 Où sortir ce soir ?',
+  'suggest.evening.2': '🌮 Quelque chose pour dîner',
+  'suggest.evening.3': '🏨 Vous cherchez où dormir ?',
+  'suggest.evening.4': '🌙 Lieux ouverts maintenant',
+  'suggest.lateNight.1': '🌙 Lieux ouverts maintenant',
+  'suggest.lateNight.2': '🍔 J’ai faim',
+  'suggest.lateNight.3': '🏨 Je cherche où dormir',
+  'suggest.general.1': '🍔 J’ai faim',
+  'suggest.general.2': '🍺 Je veux une bière',
+  'suggest.general.3': '☕ J’ai besoin d’un café',
+  'suggest.general.4': '🏨 Je cherche où dormir',
+  'suggest.general.5': '📍 Quelque chose de bien près de moi',
 
   'location.current': 'Votre position actuelle',
   'location.failure.denied':
@@ -202,7 +229,7 @@ export const fr: TranslationCatalog = {
   'support.intro': 'Réponses rapides aux questions les plus fréquentes de cette phase.',
   'support.enable.title': 'Comment activer ma position ?',
   'support.enable.b1':
-    "Sur l'accueil, touchez « Utiliser ma position actuelle » et acceptez la permission.",
+    "Sur l'accueil, touchez le bouton de localisation à côté de votre zone et acceptez la permission.",
   'support.enable.b2':
     "Si vous l'avez refusée, activez-la dans les réglages du système : Locavo → Autorisations → Localisation.",
   'support.manual.title': 'Et si je ne veux pas partager ma position ?',
