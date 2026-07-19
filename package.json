@@ -17,6 +17,8 @@
     "db:types": "supabase gen types typescript --local > src/data/supabase/database.types.ts",
     "denue:extract": "node scripts/denue/build-pilot-extract.mjs",
     "denue:import": "tsx scripts/denue/import-pilot.ts",
+    "denue:prepare:culiacan": "tsx scripts/denue/prepare-culiacan.ts",
+    "denue:manifest": "tsx scripts/denue/build-archive-manifest.ts",
     "acceptance:web": "npm run build:web && npx serve dist -l 4173",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build:web"
   },

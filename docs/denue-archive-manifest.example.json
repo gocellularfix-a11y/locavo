@@ -1,0 +1,31 @@
+{
+  "$comment": "Esquema de EJEMPLO saneado del manifiesto local generado por `npm run denue:manifest`. El manifiesto real vive en <GeoDataRoot>/INEGI/DENUE/05_2026/manifests/ y NO se versiona porque contiene rutas de máquina.",
+  "edition": "05_2026",
+  "dataset": "MEX-INEGI.EEC2.05-DENUE-2026",
+  "officialSourcePage": "https://www.inegi.org.mx/app/descarga/?ti=6",
+  "officialDistributionBase": "https://www.inegi.org.mx/contenidos/masiva/denue",
+  "license": "Términos de Libre Uso de la Información del INEGI",
+  "correctionNote": "Publicado 2026-05-20; correcciones oficiales 2026-05-29 y 2026-07-01 (ver nota técnica en docs/).",
+  "generatedAt": "2026-07-19T00:00:00.000Z",
+  "archiveRoot": "<GeoDataRoot>/INEGI/DENUE/05_2026",
+  "fileCount": 1,
+  "totalBytes": 12902619,
+  "files": [
+    {
+      "originalFilename": "denue_25_csv.zip",
+      "officialSource": "https://www.inegi.org.mx/contenidos/masiva/denue/denue_25_csv.zip",
+      "byteSize": 12902619,
+      "sha256": "<sha256-hex>",
+      "downloadedAt": "2026-07-19T00:00:00.000Z",
+      "zipStructureValid": true,
+      "extractionStatus": "extracted",
+      "extractedFiles": [
+        {
+          "path": "extracted/denue_25_csv/conjunto_de_datos/denue_inegi_25_.csv",
+          "byteSize": 67068000,
+          "detectedEncoding": "latin1"
+        }
+      ]
+    }
+  ]
+}

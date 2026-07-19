@@ -45,6 +45,9 @@ export interface DenueRejection {
   row: number;
   denueId?: string;
   reason: DenueRejectionReason;
+  /** Solo en 'unmapped_category': actividad SCIAN para reportar cobertura. */
+  codigoAct?: string;
+  nombreAct?: string;
 }
 
 export interface DenueMunicipalityFilter {
@@ -157,7 +160,15 @@ export function mapDenueRow(
 
   const category = categoryForScianCode(record.codigo_act);
   if (!category) {
-    return { rejection: { row, denueId, reason: 'unmapped_category' } };
+    return {
+      rejection: {
+        row,
+        denueId,
+        reason: 'unmapped_category',
+        codigoAct: clean(record.codigo_act),
+        nombreAct: clean(record.nombre_act),
+      },
+    };
   }
 
   const latitude = Number.parseFloat(record.latitud);

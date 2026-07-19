@@ -43,6 +43,18 @@ supabase/.branches/
 # piloto pequeño de data/denue/ se versiona.
 .cache/
 
+# Archivo oficial DENUE / GeoData (fuente masiva: nunca en git).
+# Reglas específicas para no ocultar código fuente por accidente.
+GeoData/
+data/denue/*.zip
+data/denue/extracted/
+data/denue/derived/
+*.pack.json
+*.pack.json.tmp
+*.quarantine.json
+denue-*-manifest.json
+*.part
+
 # local tooling state (not part of the project)
 .claude/
 .omc/
