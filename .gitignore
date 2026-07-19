@@ -39,6 +39,10 @@ yarn-error.*
 supabase/.temp/
 supabase/.branches/
 
+# Descargas masivas de fuentes oficiales (DENUE, etc.); solo el extracto
+# piloto pequeño de data/denue/ se versiona.
+.cache/
+
 # local tooling state (not part of the project)
 .claude/
 .omc/

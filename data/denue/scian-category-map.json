@@ -1,0 +1,28 @@
+{
+  "description": "Mapeo documentado SCIAN (codigo_act DENUE) -> categoría canónica Locavo. Única fuente de verdad: la consumen scripts/denue/build-pilot-extract.mjs y src/data/import/denue/DenueCategoryMapping.ts. Derivado de los códigos realmente presentes en DENUE 05_2026 para Culiacán, Sinaloa.",
+  "dataset": "MEX-INEGI.EEC2.05-DENUE-2026",
+  "mappings": {
+    "722511": { "category": "food", "label": "Restaurantes con servicio de preparación de alimentos a la carta o de comida corrida" },
+    "722512": { "category": "food", "label": "Restaurantes con servicio de preparación de pescados y mariscos" },
+    "722513": { "category": "food", "label": "Restaurantes con servicio de preparación de antojitos" },
+    "722514": { "category": "food", "label": "Restaurantes con servicio de preparación de tacos y tortas" },
+    "722516": { "category": "food", "label": "Restaurantes de autoservicio" },
+    "722517": { "category": "food", "label": "Restaurantes con servicio de preparación de pizzas, hamburguesas, hot dogs y pollos rostizados para llevar" },
+    "722518": { "category": "food", "label": "Restaurantes que preparan otro tipo de alimentos para llevar" },
+    "722519": { "category": "food", "label": "Servicios de preparación de otros alimentos para consumo inmediato" },
+    "722515": { "category": "coffee", "label": "Cafeterías, fuentes de sodas, neverías, refresquerías y similares" },
+    "461211": { "category": "beer", "label": "Comercio al por menor de vinos y licores" },
+    "461212": { "category": "beer", "label": "Comercio al por menor de cerveza" },
+    "722411": { "category": "nightlife", "label": "Centros nocturnos, discotecas y similares" },
+    "722412": { "category": "nightlife", "label": "Bares, cantinas y similares" },
+    "721111": { "category": "lodging", "label": "Hoteles con otros servicios integrados" },
+    "721112": { "category": "lodging", "label": "Hoteles sin otros servicios integrados" },
+    "721113": { "category": "lodging", "label": "Moteles" },
+    "464111": { "category": "pharmacy", "label": "Farmacias sin minisúper" },
+    "464112": { "category": "pharmacy", "label": "Farmacias con minisúper" },
+    "468411": { "category": "gas", "label": "Comercio al por menor de gasolina y diesel" },
+    "461110": { "category": "store", "label": "Comercio al por menor en tiendas de abarrotes, ultramarinos y misceláneas" },
+    "462111": { "category": "store", "label": "Comercio al por menor en supermercados" },
+    "462112": { "category": "store", "label": "Comercio al por menor en minisupers" }
+  }
+}
