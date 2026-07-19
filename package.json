@@ -19,6 +19,8 @@
     "denue:import": "tsx scripts/denue/import-pilot.ts",
     "denue:prepare:culiacan": "tsx scripts/denue/prepare-culiacan.ts",
     "denue:manifest": "tsx scripts/denue/build-archive-manifest.ts",
+    "citypack:build:culiacan": "tsx scripts/citypack/build-culiacan.ts",
+    "citypack:stage": "tsx scripts/citypack/stage.ts",
     "acceptance:web": "npm run build:web && npx serve dist -l 4173",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build:web"
   },

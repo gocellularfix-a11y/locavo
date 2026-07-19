@@ -6,6 +6,8 @@
  */
 export interface FeatureFlags {
   useCloudPlaceRepository: boolean;
+  /** City pack de runtime (V4D): trozos perezosos con respaldo local. */
+  useCityPackRepository: boolean;
   enableDenueProvider: boolean;
   enableOpenStreetMapProvider: boolean;
   enableOwnerData: boolean;
@@ -14,11 +16,26 @@ export interface FeatureFlags {
 
 export const FEATURE_FLAGS: Readonly<FeatureFlags> = Object.freeze({
   useCloudPlaceRepository: false,
+  useCityPackRepository: false,
   enableDenueProvider: false,
   enableOpenStreetMapProvider: false,
   enableOwnerData: false,
   enableCommunityVerification: false,
 });
+
+/**
+ * Activación del city pack: bandera comprometida (default OFF) o
+ * configuración EXPLÍCITA de desarrollo vía EXPO_PUBLIC_USE_CITY_PACK=1
+ * (variable local .env, nunca versionada) para las pruebas de aceptación
+ * en Samsung y web. Con pack inválido/ausente el repositorio degrada solo
+ * al local.
+ */
+export function isCityPackEnabled(flags: Readonly<FeatureFlags> = FEATURE_FLAGS): boolean {
+  if (flags.useCityPackRepository) {
+    return true;
+  }
+  return process.env.EXPO_PUBLIC_USE_CITY_PACK === '1';
+}
 
 export type DataMode = 'mock' | 'cloud';
 

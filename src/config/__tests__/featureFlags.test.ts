@@ -4,6 +4,7 @@ describe('feature flags', () => {
   it('defaults seguros: toda la transición cloud está apagada', () => {
     expect(FEATURE_FLAGS).toEqual({
       useCloudPlaceRepository: false,
+      useCityPackRepository: false,
       enableDenueProvider: false,
       enableOpenStreetMapProvider: false,
       enableOwnerData: false,

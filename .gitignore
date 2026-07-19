@@ -55,6 +55,10 @@ data/denue/derived/
 denue-*-manifest.json
 *.part
 
+# City pack de runtime staged (assets generados reales: nunca en git)
+public/citypack/
+citypack-staged/
+
 # local tooling state (not part of the project)
 .claude/
 .omc/
