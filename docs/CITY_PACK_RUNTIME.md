@@ -1,4 +1,40 @@
-# City pack de runtime — carga perezosa (V4D)
+# City pack de runtime — carga perezosa (V4D) + activación (V4C)
+
+## Activación (V4C)
+
+El city pack OFICIAL de Culiacán (500 establecimientos DENUE) es la fuente
+de datos **ACTIVA por defecto**, con respaldo local seguro. La activación
+vive en la bandera COMPROMETIDA `useCityPackRepository: true`
+(`src/config/featureFlags.ts`): **no depende de crear un `.env` local**.
+Supabase/Cloud permanece OFF y nunca es la fuente.
+
+### Empaquetado reproducible desde un clon limpio
+
+El pack de runtime se genera de forma DETERMINISTA a partir del extracto
+versionado en el repositorio — **sin** el archivo nacional DENUE de 67 MB ni
+la raíz GeoData:
+
+```
+data/denue/denue_culiacan_pilot.csv   (500 establecimientos aprobados, versionado)
+data/denue/scian-category-map.json    (mapeo SCIAN → categoría, versionado)
+   │  npm run citypack:bundle          (reutiliza parser+mapper+builder aprobados)
+   ▼
+public/citypack/**                        → web/PWA   (gitignored: artefacto de build)
+android/app/src/main/assets/citypack/**   → APK        (gitignored: artefacto de build)
+```
+
+Flujo de un clon limpio para una release funcional:
+
+```
+npm install
+npm run citypack:bundle          # genera y empaqueta el pack (web + android)
+npm run build:web                # ya ejecuta citypack:bundle como primer paso
+# Android: npx expo prebuild → npm run citypack:bundle → (cd android && gradlew assembleRelease)
+```
+
+La lógica compartida vive en `src/data/places/citypack/buildBundledPack.ts`
+(la usan el script y las pruebas): mismas entradas → mismos bytes. El pack
+empaquetado es idéntico al derivado del archivo nacional para esos registros.
 
 ## Arquitectura
 
@@ -41,9 +77,9 @@ assets de la app (IGNORADOS por git)
 
 ## Bandera y respaldo
 
-- `useCityPackRepository: false` (default comprometido). Activación de
-  desarrollo explícita: `EXPO_PUBLIC_USE_CITY_PACK=1` en `.env` local
-  (nunca versionado).
+- `useCityPackRepository: true` (V4C: default comprometido, ACTIVO para el
+  pack bundled de Culiacán). `EXPO_PUBLIC_USE_CITY_PACK=1` sigue disponible
+  como anulación de desarrollo, pero la activación NO depende de un `.env`.
 - Pack ausente, corrupto, incompleto o de esquema desconocido → cada
   llamada degrada automáticamente a `LocalPlaceRepository` (que nunca
   desaparece). Los errores de VALIDACIÓN de consulta sí se propagan.

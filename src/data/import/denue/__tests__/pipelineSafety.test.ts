@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { FEATURE_FLAGS, getDataMode } from '../../../../config/featureFlags';
+import { CityPackRepository } from '../../../places/citypack/CityPackRepository';
 import { createPlaceRepository } from '../../../places/createPlaceRepository';
-import { LocalPlaceRepository } from '../../../places/LocalPlaceRepository';
+import { SupabasePlaceRepository } from '../../../supabase/SupabasePlaceRepository';
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..', '..');
 
@@ -71,10 +72,12 @@ describe('seguridad del pipeline DENUE (V4C)', () => {
     }
   });
 
-  it('Cloud permanece OFF y LocalPlaceRepository sigue disponible por defecto', () => {
+  it('V4C: Cloud/Supabase OFF; el repositorio por defecto es el city pack (nunca la nube)', () => {
     expect(FEATURE_FLAGS.useCloudPlaceRepository).toBe(false);
-    expect(getDataMode(FEATURE_FLAGS)).toBe('mock');
-    expect(createPlaceRepository()).toBeInstanceOf(LocalPlaceRepository);
+    expect(getDataMode(FEATURE_FLAGS)).not.toBe('cloud');
+    const repo = createPlaceRepository();
+    expect(repo).toBeInstanceOf(CityPackRepository);
+    expect(repo).not.toBeInstanceOf(SupabasePlaceRepository);
   });
 
   it('no se activó Supabase en la UI (las pantallas no importan supabase)', () => {

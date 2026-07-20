@@ -19,20 +19,12 @@ describe('seguridad del milestone V4D', () => {
     delete process.env.EXPO_PUBLIC_USE_CITY_PACK;
   });
 
-  it('la bandera useCityPackRepository existe y su default comprometido es false', () => {
-    expect(FEATURE_FLAGS.useCityPackRepository).toBe(false);
-    expect(isCityPackEnabled(FEATURE_FLAGS)).toBe(false);
-  });
-
-  it('LocalPlaceRepository sigue siendo el repositorio por defecto', () => {
-    const repo = createPlaceRepository();
-    expect(repo).toBeInstanceOf(LocalPlaceRepository);
-    expect(repo).not.toBeInstanceOf(CityPackRepository);
-  });
-
-  it('la configuración explícita de desarrollo activa el pack con respaldo local', () => {
-    process.env.EXPO_PUBLIC_USE_CITY_PACK = '1';
+  it('V4C: la bandera useCityPackRepository está ACTIVA por defecto (comprometida)', () => {
+    expect(FEATURE_FLAGS.useCityPackRepository).toBe(true);
     expect(isCityPackEnabled(FEATURE_FLAGS)).toBe(true);
+  });
+
+  it('V4C: CityPackRepository es el repositorio por defecto (con respaldo local dentro)', () => {
     const { files } = buildRuntimePack(fixturePack());
     const repo = createPlaceRepository(
       FEATURE_FLAGS,
@@ -40,6 +32,13 @@ describe('seguridad del milestone V4D', () => {
       fakeLoaderFrom(files).loader,
     );
     expect(repo).toBeInstanceOf(CityPackRepository);
+    expect(repo).not.toBeInstanceOf(LocalPlaceRepository);
+  });
+
+  it('la activación NO depende de crear un .env local', () => {
+    // Sin EXPO_PUBLIC_USE_CITY_PACK definido, la bandera comprometida basta.
+    delete process.env.EXPO_PUBLIC_USE_CITY_PACK;
+    expect(isCityPackEnabled(FEATURE_FLAGS)).toBe(true);
   });
 
   it('la bandera en true también compone CityPackRepository', () => {
@@ -52,9 +51,10 @@ describe('seguridad del milestone V4D', () => {
     expect(repo).toBeInstanceOf(CityPackRepository);
   });
 
-  it('Cloud permanece OFF y el modo de datos sigue siendo mock', () => {
+  it('Cloud/Supabase permanece OFF con el city pack activo (nunca es la fuente)', () => {
     expect(FEATURE_FLAGS.useCloudPlaceRepository).toBe(false);
-    expect(getDataMode(FEATURE_FLAGS)).toBe('mock');
+    // getDataMode solo distingue nube de no-nube: el city pack es offline.
+    expect(getDataMode(FEATURE_FLAGS)).not.toBe('cloud');
   });
 
   it('el runtime no importa el pack completo de forma ansiosa (sin JSON embebido)', () => {
@@ -105,7 +105,11 @@ describe('seguridad del milestone V4D', () => {
   });
 
   it('los scripts del city pack no fijan letras de unidad de esta máquina', () => {
-    for (const file of ['scripts/citypack/build-culiacan.ts', 'scripts/citypack/stage.ts']) {
+    for (const file of [
+      'scripts/citypack/build-culiacan.ts',
+      'scripts/citypack/stage.ts',
+      'scripts/citypack/build-bundled.ts',
+    ]) {
       const source = read(file);
       expect(source).not.toMatch(/[CE]:\\{1,2}GeoData/);
       expect(source).not.toMatch(/\bfetch\s*\(/);

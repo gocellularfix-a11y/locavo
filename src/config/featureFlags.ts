@@ -1,8 +1,11 @@
 /**
- * Feature flags de la transición de datos (V3).
+ * Feature flags de la transición de datos (V3/V4C).
  *
- * Defaults SEGUROS: todo apagado → la app usa el repositorio local (mock).
- * Un solo punto de verdad; prohibido esparcir banderas por el código.
+ * V4C: el city pack OFICIAL de Culiacán (500 establecimientos DENUE
+ * empaquetados y offline) es la fuente de datos ACTIVA por defecto, con
+ * respaldo automático en el repositorio local. La nube (Supabase) permanece
+ * APAGADA: jamás se activa por accidente. Un solo punto de verdad; prohibido
+ * esparcir banderas por el código.
  */
 export interface FeatureFlags {
   useCloudPlaceRepository: boolean;
@@ -16,7 +19,8 @@ export interface FeatureFlags {
 
 export const FEATURE_FLAGS: Readonly<FeatureFlags> = Object.freeze({
   useCloudPlaceRepository: false,
-  useCityPackRepository: false,
+  // V4C: city pack oficial de Culiacán ACTIVO (offline, con respaldo local).
+  useCityPackRepository: true,
   enableDenueProvider: false,
   enableOpenStreetMapProvider: false,
   enableOwnerData: false,
@@ -24,11 +28,12 @@ export const FEATURE_FLAGS: Readonly<FeatureFlags> = Object.freeze({
 });
 
 /**
- * Activación del city pack: bandera comprometida (default OFF) o
- * configuración EXPLÍCITA de desarrollo vía EXPO_PUBLIC_USE_CITY_PACK=1
- * (variable local .env, nunca versionada) para las pruebas de aceptación
- * en Samsung y web. Con pack inválido/ausente el repositorio degrada solo
- * al local.
+ * Activación del city pack: bandera comprometida (V4C: default ON para el
+ * pack bundled de Culiacán) o, como anulación explícita de desarrollo,
+ * EXPO_PUBLIC_USE_CITY_PACK=1 (variable local .env, nunca versionada). La
+ * activación NO depende de crear un .env: la configuración vive en la
+ * bandera comprometida. Con pack inválido/ausente el repositorio degrada
+ * solo al local (con diagnóstico de desarrollo).
  */
 export function isCityPackEnabled(flags: Readonly<FeatureFlags> = FEATURE_FLAGS): boolean {
   if (flags.useCityPackRepository) {

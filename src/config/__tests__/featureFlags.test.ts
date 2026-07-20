@@ -1,10 +1,11 @@
 import { FEATURE_FLAGS, getDataMode } from '../featureFlags';
 
 describe('feature flags', () => {
-  it('defaults seguros: toda la transición cloud está apagada', () => {
+  it('V4C: city pack ACTIVO, nube y proveedores externos APAGADOS', () => {
     expect(FEATURE_FLAGS).toEqual({
       useCloudPlaceRepository: false,
-      useCityPackRepository: false,
+      // V4C: pack oficial de Culiacán offline, activo por defecto.
+      useCityPackRepository: true,
       enableDenueProvider: false,
       enableOpenStreetMapProvider: false,
       enableOwnerData: false,
