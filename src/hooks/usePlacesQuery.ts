@@ -30,6 +30,19 @@ export interface PlacesQueryResult {
 }
 
 /**
+ * Anexa una página deduplicando por id canónico (orden estable, sin
+ * duplicados entre páginas). Pura e independiente de React para pruebas.
+ */
+export function appendResults(
+  previous: readonly ScoredPlace[],
+  incoming: readonly ScoredPlace[],
+): ScoredPlace[] {
+  const seen = new Set(previous.map((scored) => scored.place.id));
+  const fresh = incoming.filter((scored) => !seen.has(scored.place.id));
+  return [...previous, ...fresh];
+}
+
+/**
  * Puente pantalla ↔ PlaceSearchService (V3, paginado en V4D.1).
  * Cambiar categoría, búsqueda, filtros o ubicación REINICIA la paginación:
  * los resultados anteriores se sueltan (no se acumulan entre consultas).
@@ -92,11 +105,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
       })
       .then((response) => {
         if (seq === requestSeq.current) {
-          setResults((previous) => {
-            const seen = new Set(previous.map((scored) => scored.place.id));
-            const fresh = response.results.filter((scored) => !seen.has(scored.place.id));
-            return [...previous, ...fresh];
-          });
+          setResults((previous) => appendResults(previous, response.results));
           setNextCursor(response.nextCursor);
         }
       })

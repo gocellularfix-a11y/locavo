@@ -57,8 +57,14 @@ assets de la app (IGNORADOS por git)
 - **Android**: assets del APK (`file:///android_asset/citypack/...`)
   leídos con expo-file-system (incluido en el SDK de Expo: sin nuevas
   dependencias). Sin red tras la instalación.
-- **iOS**: misma mecánica desde el bundle (mejor esfuerzo; sin equipo iOS
-  en esta fase).
+- **iOS**: misma mecánica desde el bundle de la app (`bundleDirectory` de
+  expo-file-system). Auditoría V4D.2 (sin hardware iOS): sin fugas de
+  `asset:///android_asset`; `bundleDirectory` ausente → fallo limpio hacia
+  el respaldo local; selección de plataforma cubierta por pruebas
+  unitarias. **Pendiente con macOS/dispositivo**: (1) extender
+  `citypack:stage` para copiar `citypack/` como recurso del proyecto
+  `ios/` generado (Xcode "folder reference"), (2) build release iOS,
+  (3) matriz de aceptación equivalente a la de Android.
 
 ## Regeneración segura
 

@@ -36,11 +36,24 @@ export function createPlatformCityPackLoader(): CityPackAssetLoader {
   return {
     async load(path: string): Promise<string> {
       // Carga perezosa del módulo nativo: solo cuando el pack está activo.
-      const FileSystem = await import('expo-file-system/legacy');
-      const base =
-        Platform.OS === 'android'
-          ? ANDROID_BASE
-          : `${FileSystem.bundleDirectory ?? ''}citypack`;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const FileSystem = require('expo-file-system/legacy') as typeof import('expo-file-system/legacy');
+      let base: string;
+      if (Platform.OS === 'android') {
+        base = ANDROID_BASE;
+      } else {
+        // iOS: assets dentro del bundle de la app. Sin bundleDirectory
+        // (entorno inesperado) se falla LIMPIO hacia el respaldo local en
+        // lugar de leer una ruta relativa sin sentido. El esquema
+        // asset:///android_asset jamás se usa fuera de Android.
+        const bundleDir = FileSystem.bundleDirectory;
+        if (!bundleDir) {
+          throw new CityPackAssetError(
+            `Recurso no disponible: ${path} (bundleDirectory no definido en ${Platform.OS})`,
+          );
+        }
+        base = `${bundleDir.replace(/\/$/, '')}/citypack`;
+      }
       try {
         return await FileSystem.readAsStringAsync(`${base}/${path}`);
       } catch (error) {

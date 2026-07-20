@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
@@ -26,6 +26,22 @@ import { radii, spacing } from '../../theme/tokens';
 
 /** Máximo de marcadores simultáneos en el mapa (tope V4D.1). */
 const MAX_MAP_MARKERS = 200;
+
+/**
+ * Ajustes de virtualización (V4D.2), medidos sobre tarjetas de ~150–170 px
+ * en una pantalla de ~2340 px:
+ * - initialNumToRender 8: llena el primer viewport bajo cabecera+mapa sin
+ *   montar páginas enteras;
+ * - maxToRenderPerBatch 8 y windowSize 7 (~3.5 pantallas por lado):
+ *   desplazamiento fluido sin retener las 150+ tarjetas de varias páginas;
+ * - sin getItemLayout: la altura de tarjeta NO es determinista (nombres de
+ *   negocios reales envuelven a 2 líneas);
+ * - removeClippedSubviews queda en el default de plataforma (activado en
+ *   Android por FlatList; forzarlo en web causa parpadeos conocidos).
+ */
+const LIST_INITIAL_RENDER = 8;
+const LIST_BATCH_SIZE = 8;
+const LIST_WINDOW_SIZE = 7;
 
 interface FilterChipProps {
   label: string;
@@ -118,9 +134,8 @@ export default function ExploreScreen() {
     }
   }, [recommended?.place.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Tope explícito de marcadores (V4D.1): el mapa nunca acumula miles de
-  // pines aunque el usuario cargue muchas páginas; 200 cubre varias páginas
-  // visibles sin degradar el mapa web/nativo.
+  // Tope explícito de marcadores (V4D.1): DTOs ligeros regenerados desde la
+  // consulta activa; jamás acumulan páginas ni categorías anteriores.
   const markers = useMemo(
     () =>
       results.slice(0, MAX_MAP_MARKERS).map((r) => ({
@@ -138,10 +153,39 @@ export default function ExploreScreen() {
   const isWide = width >= 900;
 
   const directions = useDirections();
-  const navigateTo = (scored: ScoredPlace) => {
-    directions.navigateTo(scored.place);
-  };
-  const openDetails = (scored: ScoredPlace) => router.push(`/place/${scored.place.id}`);
+  const navigateTo = useCallback(
+    (scored: ScoredPlace) => {
+      directions.navigateTo(scored.place);
+    },
+    [directions],
+  );
+  const openDetails = useCallback(
+    (scored: ScoredPlace) => router.push(`/place/${scored.place.id}`),
+    [router],
+  );
+
+  // Datos de la lista virtualizada (la recomendación va en la cabecera).
+  const listData = useMemo(
+    () => (recommended ? results.slice(1) : results),
+    [results, recommended],
+  );
+
+  const keyExtractor = useCallback((item: ScoredPlace) => item.place.id, []);
+  const renderItem = useCallback(
+    ({ item }: { item: ScoredPlace }) => (
+      <View style={{ paddingBottom: spacing.md }}>
+        <PlaceCard
+          scored={item}
+          selected={item.place.id === selectedId}
+          onPress={(s) => {
+            setSelectedId(s.place.id);
+            openDetails(s);
+          }}
+        />
+      </View>
+    ),
+    [selectedId, openDetails],
+  );
 
   const navigationNotice = directions.failedPlace ? (
     <NavigationErrorNotice
@@ -151,7 +195,7 @@ export default function ExploreScreen() {
     />
   ) : null;
 
-  const header = (
+  const searchAndFilters = (
     <View style={{ gap: spacing.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <Pressable
@@ -249,42 +293,30 @@ export default function ExploreScreen() {
     />
   );
 
-  const listBlock = (
-    <View style={{ gap: spacing.md }}>
-      <AppText variant="section" accessibilityRole="header">
-        {t('explore.nearbyPlaces')}
-      </AppText>
-      {results.slice(recommended ? 1 : 0).map((scored) => (
-        <PlaceCard
-          key={scored.place.id}
-          scored={scored}
-          selected={scored.place.id === selectedId}
-          onPress={(s) => {
-            setSelectedId(s.place.id);
-            openDetails(s);
-          }}
-        />
-      ))}
-      {hasMore ? (
-        <AppButton
-          label={loadingMore ? t('common.loading') : t('explore.loadMore')}
-          variant="secondary"
-          icon="chevron-down"
-          disabled={loadingMore}
-          onPress={loadMore}
-          accessibilityHint={t('explore.loadMoreHint')}
-        />
+  const hasResults = status === 'ready' && results.length > 0;
+
+  const listHeader = (
+    <View style={{ gap: spacing.xl, paddingBottom: hasResults ? spacing.md : 0 }}>
+      {searchAndFilters}
+      {hasResults && recommended ? (
+        <RecommendedPlaceCard scored={recommended} onNavigate={navigateTo} onDetails={openDetails} />
+      ) : null}
+      {navigationNotice}
+      {hasResults && !isWide ? mapBlock : null}
+      {hasResults ? (
+        <AppText variant="section" accessibilityRole="header">
+          {t('explore.nearbyPlaces')}
+        </AppText>
       ) : null}
     </View>
   );
 
-  let body: React.ReactNode;
-  if (status === 'loading') {
-    body = <LoadingState />;
-  } else if (status === 'error') {
-    body = <ErrorState onRetry={reload} />;
-  } else if (results.length === 0) {
-    body = (
+  const listEmpty =
+    status === 'loading' ? (
+      <LoadingState />
+    ) : status === 'error' ? (
+      <ErrorState onRetry={reload} />
+    ) : (
       <EmptyState
         title={t('explore.emptyTitle')}
         message={openOnly ? t('explore.emptyFiltered') : t('explore.emptyGeneric')}
@@ -296,46 +328,53 @@ export default function ExploreScreen() {
         }}
       />
     );
-  } else if (isWide) {
-    body = (
-      <View style={{ flexDirection: 'row', gap: spacing.xl, alignItems: 'flex-start' }}>
-        <View style={{ flex: 5, gap: spacing.xl }}>
-          {recommended ? (
-            <RecommendedPlaceCard
-              scored={recommended}
-              onNavigate={navigateTo}
-              onDetails={openDetails}
-            />
-          ) : null}
-          {navigationNotice}
-          {listBlock}
-        </View>
-        <View style={{ flex: 4 }}>{mapBlock}</View>
+
+  const listFooter =
+    hasResults && hasMore ? (
+      <View style={{ paddingTop: spacing.sm, paddingBottom: spacing.xxl }}>
+        <AppButton
+          label={loadingMore ? t('common.loading') : t('explore.loadMore')}
+          variant="secondary"
+          icon="chevron-down"
+          disabled={loadingMore}
+          onPress={loadMore}
+          accessibilityHint={t('explore.loadMoreHint')}
+        />
       </View>
+    ) : (
+      <View style={{ height: spacing.xxl }} />
     );
-  } else {
-    body = (
-      <View style={{ gap: spacing.xl }}>
-        {recommended ? (
-          <RecommendedPlaceCard
-            scored={recommended}
-            onNavigate={navigateTo}
-            onDetails={openDetails}
-          />
-        ) : null}
-        {navigationNotice}
-        {mapBlock}
-        {listBlock}
-      </View>
-    );
-  }
+
+  // Lista virtualizada como ÚNICO scroll vertical de la pantalla: solo se
+  // montan las tarjetas visibles más una ventana acotada, sin importar
+  // cuántas páginas se hayan cargado.
+  const list = (
+    <FlatList
+      style={{ flex: 1 }}
+      data={hasResults ? listData : []}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      ListHeaderComponent={listHeader}
+      ListEmptyComponent={listEmpty}
+      ListFooterComponent={hasResults ? listFooter : null}
+      initialNumToRender={LIST_INITIAL_RENDER}
+      maxToRenderPerBatch={LIST_BATCH_SIZE}
+      windowSize={LIST_WINDOW_SIZE}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    />
+  );
 
   return (
-    <ScreenContainer>
-      <View style={{ gap: spacing.xl }}>
-        {header}
-        {body}
-      </View>
+    <ScreenContainer scroll={false} contentStyle={{ paddingBottom: 0 }}>
+      {isWide ? (
+        <View style={{ flexDirection: 'row', gap: spacing.xl, flex: 1 }}>
+          <View style={{ flex: 5 }}>{list}</View>
+          <View style={{ flex: 4, paddingTop: spacing.xxxl }}>{hasResults ? mapBlock : null}</View>
+        </View>
+      ) : (
+        list
+      )}
     </ScreenContainer>
   );
 }
