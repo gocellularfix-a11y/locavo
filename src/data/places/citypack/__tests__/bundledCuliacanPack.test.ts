@@ -19,6 +19,7 @@ import {
 import { LocalPlaceRepository } from '../../LocalPlaceRepository';
 import type { PlaceRepository } from '../../PlaceRepository';
 import { individualVerificationDateOf } from '../../../../domain/places/LocavoPlace';
+import { isLocavoPlaceId, locavoPlaceIdFromDenue } from '../../../../domain/places/locavoPlaceId';
 import { haversineKm } from '../../../../domain/distance';
 import { evaluateOpenStatus } from '../../../../domain/openingHours';
 import { parseDenueCsv } from '../../../import/denue/DenueCsvParser';
@@ -82,6 +83,67 @@ describe('V4C · pack bundled de Culiacán (datos reales)', () => {
     expect(bundle.build.stats.duplicates).toBe(0);
   });
 
+  describe('identidad canónica (UUID propio de Locavo)', () => {
+    it('cada id canónico es un UUID v5 válido, no el denue_id, sin prefijo denue-', () => {
+      for (const place of bundle.build.pack.places) {
+        const denueId = place.sources[0].externalId;
+        expect(isLocavoPlaceId(place.id)).toBe(true);
+        expect(place.id).not.toBe(denueId);
+        expect(place.id.startsWith('denue-')).toBe(false);
+      }
+    });
+
+    it('500 registros → 500 UUIDs canónicos ÚNICOS', () => {
+      const ids = new Set(bundle.build.pack.places.map((p) => p.id));
+      expect(ids.size).toBe(EXPECTED_COUNT);
+    });
+
+    it('el denue_id y la CLEE se preservan APARTE; el proveedor es "denue"', () => {
+      for (const place of bundle.build.pack.places) {
+        const source = place.sources.find((s) => s.provider === 'denue');
+        expect(source).toBeDefined();
+        expect(source?.provider).toBe('denue');
+        expect(typeof source?.externalId).toBe('string');
+        expect((source?.externalId ?? '').length).toBeGreaterThan(0);
+        // Hidratado a LocavoPlace: id canónico + refs de proveedor separadas.
+        const hydrated = cityPackPlaceToLocavoPlace(place);
+        expect(hydrated.id).toBe(place.id);
+        expect(hydrated.sourceRefs.denueId).toBe(source?.externalId);
+        if (source?.clee) {
+          expect(hydrated.sourceRefs.clee).toBe(source.clee);
+        }
+        expect(isLocavoPlaceId(hydrated.id)).toBe(true);
+      }
+    });
+
+    it('el MISMO registro produce el MISMO UUID entre builds; el orden no influye', () => {
+      const again = buildBundledCuliacanPack(csvText);
+      const byDenue = new Map(again.build.pack.places.map((p) => [p.sources[0].externalId, p.id]));
+      for (const place of bundle.build.pack.places) {
+        const denueId = place.sources[0].externalId;
+        // Reproducible entre builds…
+        expect(byDenue.get(denueId)).toBe(place.id);
+        // …y derivable solo del denue_id (independiente de la posición).
+        expect(place.id).toBe(locavoPlaceIdFromDenue(denueId));
+      }
+    });
+
+    it('registros DENUE distintos → UUIDs canónicos distintos', () => {
+      expect(locavoPlaceIdFromDenue('3763998')).not.toBe(locavoPlaceIdFromDenue('3763999'));
+    });
+
+    it('getById resuelve por UUID canónico (no por denue_id)', async () => {
+      const { repo } = repoFrom();
+      const sample = bundle.build.pack.places[0];
+      const byUuid = await repo.getById(sample.id);
+      expect(byUuid?.id).toBe(sample.id);
+      expect(byUuid?.sourceRefs.denueId).toBe(sample.sources[0].externalId);
+      // El denue_id crudo NO es una llave canónica válida.
+      const byDenueId = await repo.getById(sample.sources[0].externalId);
+      expect(byDenueId).toBeNull();
+    });
+  });
+
   it('preserva el nombre original del establecimiento (sin inventar)', () => {
     const rows = parseDenueCsv(csvText);
     const nameById = new Map<string, string>();
@@ -94,7 +156,8 @@ describe('V4C · pack bundled de Culiacán (datos reales)', () => {
       expect(place.name.length).toBeGreaterThan(0);
       // Nunca datos demo: el mock local usa el prefijo "Demo ".
       expect(place.name.startsWith('Demo ')).toBe(false);
-      expect(place.id.startsWith('denue-')).toBe(true);
+      // Identidad canónica propia de Locavo (UUID), nunca un id de proveedor.
+      expect(isLocavoPlaceId(place.id)).toBe(true);
     }
   });
 
@@ -147,7 +210,7 @@ describe('V4C · pack bundled de Culiacán (datos reales)', () => {
         const result = await repo.searchText({ text: term, limit: 20 });
         expect(result.places.length).toBeGreaterThan(0);
         for (const place of result.places) {
-          expect(place.id.startsWith('denue-')).toBe(true);
+          expect(isLocavoPlaceId(place.id)).toBe(true);
         }
       });
     }
@@ -238,8 +301,12 @@ describe('V4C · pack bundled de Culiacán (datos reales)', () => {
       random: () => 0.42,
     });
     expect(place).not.toBeNull();
-    expect(place?.id.startsWith('denue-')).toBe(true);
+    expect(isLocavoPlaceId(place?.id ?? '')).toBe(true);
     expect(place?.name.startsWith('Demo ')).toBe(false);
+    // El id canónico entregado por Sorpréndeme resuelve el MISMO lugar.
+    const again = await repo.getById(place?.id ?? '');
+    expect(again?.id).toBe(place?.id);
+    expect(again?.sourceRefs.denueId).toBe(place?.sourceRefs.denueId);
   });
 
   describe('respaldo local seguro', () => {

@@ -8,6 +8,10 @@ import {
 import { mapDenueRow, type DenueImportCandidate, type DenueRejection } from '../DenueCandidateMapper';
 import { parseDenueCsv } from '../DenueCsvParser';
 import { DENUE_IMPORT_DEFAULTS } from '../DenueImportService';
+import {
+  isLocavoPlaceId,
+  locavoPlaceIdFromDenue,
+} from '../../../../domain/places/locavoPlaceId';
 
 const META: CityPackMeta = {
   city: 'culiacan',
@@ -51,7 +55,25 @@ describe('buildCityPack (pack canónico de Culiacán)', () => {
   it('ordena por denue_id numérico ascendente (orden determinista)', () => {
     const csv = csvOf([{ id: '900' }, { id: '10' }, { id: '101' }]);
     const { pack } = buildFromCsv(csv);
-    expect(pack.places.map((p) => p.id)).toEqual(['denue-10', 'denue-101', 'denue-900']);
+    // El orden se comprueba por el id de PROVEEDOR (denue_id), no por la
+    // identidad canónica: el denue_id vive en sources[].externalId.
+    expect(pack.places.map((p) => p.sources[0].externalId)).toEqual(['10', '101', '900']);
+  });
+
+  it('identidad canónica: UUID v5 propio de Locavo, nunca un id de proveedor', () => {
+    const { pack } = buildFromCsv(csvOf([{ id: '900' }, { id: '10' }, { id: '101' }]));
+    for (const place of pack.places) {
+      const denueId = place.sources[0].externalId;
+      // id canónico = UUID v5 válido, distinto del denue_id, sin prefijo.
+      expect(isLocavoPlaceId(place.id)).toBe(true);
+      expect(place.id).not.toBe(denueId);
+      expect(place.id.startsWith('denue-')).toBe(false);
+      // Derivación determinista y reproducible desde el denue_id.
+      expect(place.id).toBe(locavoPlaceIdFromDenue(denueId));
+    }
+    // Ids canónicos únicos; denue_id preservado aparte.
+    const ids = pack.places.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('el pack no contiene marcas de tiempo de ejecución', () => {
@@ -73,7 +95,7 @@ describe('buildCityPack (pack canónico de Culiacán)', () => {
     const { pack, stats } = buildFromCsv(csv);
     expect(stats.duplicates).toBe(1);
     expect(pack.count).toBe(2);
-    expect(pack.places.find((p) => p.id === 'denue-500')?.name).toBe('PRIMERO');
+    expect(pack.places.find((p) => p.sources[0].externalId === '500')?.name).toBe('PRIMERO');
   });
 
   it('cada lugar lleva procedencia completa del proveedor', () => {

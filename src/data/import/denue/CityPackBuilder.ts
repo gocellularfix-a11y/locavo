@@ -3,6 +3,7 @@ import type {
   DenueMunicipalityFilter,
   DenueRejection,
 } from './DenueCandidateMapper';
+import { locavoPlaceIdFromDenue } from '../../../domain/places/locavoPlaceId';
 import type { LocavoCategory, PlaceAddress, PlaceContact } from '../../../domain/places/LocavoPlace';
 
 /**
@@ -38,7 +39,11 @@ export interface CityPackSourceRef {
 }
 
 export interface CityPackPlace {
-  /** Identidad estable dentro del pack: 'denue-<denue_id>'. */
+  /**
+   * Identidad canónica de Locavo (locavoPlaceId): UUID v5 DETERMINISTA
+   * derivado del registro de proveedor. NUNCA un id de proveedor con prefijo;
+   * el denue_id se preserva APARTE en `sources[].externalId`.
+   */
   id: string;
   name: string;
   normalizedName: string;
@@ -133,7 +138,9 @@ function toPackPlace(candidate: DenueImportCandidate, meta: CityPackMeta): CityP
   }
 
   const place: CityPackPlace = {
-    id: `denue-${candidate.denueId}`,
+    // Identidad canónica propia de Locavo (UUID v5 determinista); el denue_id
+    // queda como referencia de proveedor en `sources[]`, jamás como identidad.
+    id: locavoPlaceIdFromDenue(candidate.denueId),
     name: candidate.name,
     normalizedName: candidate.normalizedName,
     category: candidate.category,
