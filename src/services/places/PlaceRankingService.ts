@@ -2,6 +2,7 @@ import { estimateTravelMinutes, haversineKm } from '../../domain/distance';
 import { evaluateOpenStatus, type OpenStatus } from '../../domain/openingHours';
 import type { Coordinates } from '../../domain/place';
 import { individualVerificationDateOf, type LocavoPlace } from '../../domain/places/LocavoPlace';
+import type { SearchExplanation } from './searchExplanation';
 
 /**
  * Ranking local, determinista y explicable sobre el modelo canónico.
@@ -36,6 +37,12 @@ export interface ScoredPlace {
   /** Puntuación interna normalizada 0–1. No se muestra al usuario. */
   score: number;
   reasons: RecommendationReason[];
+  /**
+   * Explicación aditiva del ranking de BÚSQUEDA (V4E.1). Presente solo cuando
+   * el resultado proviene de `rankSearchResults`; el ranking de conveniencia
+   * (`rankPlaces`) no la produce. No altera `score` ni el orden.
+   */
+  explanation?: SearchExplanation;
 }
 
 const NEARBY_KM = 2;

@@ -118,3 +118,73 @@ describe('ranking de búsqueda (V4D)', () => {
     expect(ranked[0].reasons).toContain('OPEN_NOW');
   });
 });
+
+/**
+ * V4E.1 — Explicación de búsqueda: aditiva, veraz y derivada de los MISMOS
+ * hechos de matching que el score. Protege los invariantes aprobados; no
+ * duplica escenarios de orden/relevancia ya cubiertos arriba.
+ */
+describe('explicación de búsqueda (V4E.1)', () => {
+  it('INVARIANTE: sum(scoreBreakdown.points) === score para cada resultado', () => {
+    const places = [
+      place({ id: 'exact', name: 'FARMACIA', category: 'pharmacy', km: 3 }),
+      place({ id: 'prefix', name: 'FARMACIA GUADALAJARA', category: 'pharmacy', km: 1 }),
+      place({ id: 'cat', name: 'BOTICA POPULAR', category: 'pharmacy', km: 0.5, complete: true }),
+    ];
+    const ranked = rank(places, 'farmacia');
+    expect(ranked).toHaveLength(3);
+    for (const r of ranked) {
+      const sum = r.explanation!.scoreBreakdown.reduce((s, c) => s + c.points, 0);
+      expect(sum).toBeCloseTo(r.score, 9);
+    }
+  });
+
+  it('matchConfidence refleja la solidez de la coincidencia (HIGH/MEDIUM/LOW)', () => {
+    // Exacta → HIGH
+    const exact = rank([place({ id: 'e', name: 'TACOS', category: 'food' })], 'tacos')[0];
+    expect(exact.explanation!.matchConfidence).toBe('HIGH');
+    // Solo categoría (sin coincidencia de nombre) → MEDIUM
+    const catOnly = rank([place({ id: 'c', name: 'RESTAURANTE LUJO', category: 'food' })], 'comida')[0];
+    expect(catOnly.explanation!.matchConfidence).toBe('MEDIUM');
+    // Término parcial, categoría distinta → LOW
+    const partial = rank(
+      [place({ id: 'p', name: 'FARMACIA CENTRO', category: 'pharmacy', terms: ['pizza'] })],
+      'pizza cerveza',
+    )[0];
+    expect(partial.explanation!.matchConfidence).toBe('LOW');
+  });
+
+  it('matchConfidence NO depende de verification.confidence (Match ≠ Verification)', () => {
+    const low = place({ id: 'low', name: 'FARMACIA', category: 'pharmacy' });
+    const high = place({ id: 'high', name: 'FARMACIA', category: 'pharmacy' });
+    low.verification = { status: 'unverified', confidence: 0.1 };
+    high.verification = { status: 'locavo_verified', confidence: 0.99 };
+    const ranked = rank([low, high], 'farmacia');
+    const confById = Object.fromEntries(
+      ranked.map((r) => [r.place.id, r.explanation!.matchConfidence]),
+    );
+    expect(confById.low).toBe(confById.high); // misma coincidencia → misma confianza de match
+    expect(confById.low).toBe('HIGH');
+  });
+
+  it('matchedTerms reporta dónde coincidió cada término', () => {
+    const [r] = rank([place({ id: 'm', name: 'MARISCOS LAS PALMAS', category: 'food' })], 'mariscos');
+    const term = r.explanation!.matchedTerms.find((t) => t.term === 'mariscos')!;
+    expect(term.inName).toBe(true);
+    expect(term.inIndex).toBe(true);
+  });
+
+  it('matchedSignals solo contiene señales con datos reales (sin popularity/price/attributes)', () => {
+    const allowed = new Set([
+      'NAME_EXACT', 'NAME_PREFIX', 'NAME_TOKEN', 'CATEGORY', 'CATEGORY_BONUS',
+      'TERM', 'TERM_COVERAGE', 'MULTI_TERM', 'COMPLETENESS', 'DISTANCE', 'NEARBY', 'OPEN_NOW',
+    ]);
+    const ranked = rank(
+      [place({ id: 'a', name: 'FARMACIA GUADALAJARA', category: 'pharmacy', km: 1 })],
+      'farmacia',
+    );
+    for (const signal of ranked[0].explanation!.matchedSignals) {
+      expect(allowed.has(signal)).toBe(true);
+    }
+  });
+});
