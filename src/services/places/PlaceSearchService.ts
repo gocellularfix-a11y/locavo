@@ -41,6 +41,15 @@ export interface PlaceSearchResponse {
 
 const DEFAULT_NEARBY_RADIUS_M = 20_000;
 const FETCH_LIMIT = 50;
+/**
+ * Cotas de seguridad para reunir candidatos de TEXTO antes del ranking global.
+ * Reunir "todos los candidatos válidos" NO es cargar la ciudad entera: el
+ * índice invertido acota los candidatos a los que realmente coinciden. Estas
+ * cotas solo evitan un bucle patológico con datasets futuros muy grandes; el
+ * City Pack actual (500 lugares, categoría máxima 120) nunca las alcanza.
+ */
+const MAX_RANKING_CANDIDATES = 1000;
+const MAX_FETCH_PAGES = 40;
 
 export class PlaceSearchService {
   constructor(
@@ -70,22 +79,60 @@ export class PlaceSearchService {
       metadata: { queryLength: trimmed.length, openNow },
     });
 
+    // ── Búsqueda por TEXTO: RANKING GLOBAL ANTES DE PAGINACIÓN (V4D.1) ──
+    // Reúne TODOS los candidatos válidos por el índice invertido (perezoso y
+    // acotado a los que coinciden, jamás la ciudad entera), los rankea con el
+    // Search Intelligence existente y pagina el resultado YA ordenado. Así una
+    // coincidencia de nombre no queda excluida de la primera página por estar
+    // más lejos que 50 coincidencias genéricas.
+    if (intent && intent.searchText.length > 0) {
+      let candidates: LocavoPlace[];
+      try {
+        candidates = await this.collectAllTextCandidates(
+          intent.searchText,
+          origin,
+          effectiveCategories,
+        );
+      } catch (error) {
+        this.analytics.track({ eventName: 'repository_error', metadata: { operation: 'search' } });
+        throw error;
+      }
+
+      let ranked = rankSearchResults(candidates, intent, origin, now);
+      const openNowResult = this.applyOpenNow(ranked, openNow || intent.openNow);
+      ranked = openNowResult.ranked;
+      if (sort === 'distance') {
+        ranked = [...ranked].sort((a, b) => a.distanceKm - b.distanceKm);
+      }
+
+      // Paginación DESPUÉS del ranking: cursor = offset dentro del orden global.
+      const pageSize = request.limit ?? FETCH_LIMIT;
+      const offset = cursor ? Number.parseInt(cursor, 10) || 0 : 0;
+      const page = ranked.slice(offset, offset + pageSize);
+      const nextOffset = offset + page.length;
+      const nextCursor = nextOffset < ranked.length ? String(nextOffset) : undefined;
+
+      this.analytics.track({
+        eventName: page.length === 0 ? 'place_search_empty' : 'place_search_completed',
+        category: category ?? undefined,
+        metadata: { resultCount: page.length },
+      });
+
+      return {
+        results: page,
+        ...(nextCursor !== undefined ? { nextCursor } : {}),
+        intent,
+        ...(openNowResult.notice ? { notice: openNowResult.notice } : {}),
+      };
+    }
+
+    // ── Navegación por CATEGORÍA o ENTORNO (sin texto): paginación por el
+    // repositorio y ranking de conveniencia. Sin coincidencia de nombre, la
+    // distancia es la señal correcta, por lo que este flujo no cambia. ──
     let places: LocavoPlace[];
     let nextCursor: string | undefined;
     try {
-      if (intent && intent.searchText.length > 0) {
-        // Búsqueda por texto con los términos interpretados (relleno removido).
-        const result = await this.repository.searchText({
-          text: intent.searchText,
-          latitude: origin.latitude,
-          longitude: origin.longitude,
-          categories: effectiveCategories,
-          limit: FETCH_LIMIT,
-          cursor,
-        });
-        places = result.places;
-        nextCursor = result.nextCursor;
-      } else if (effectiveCategories && effectiveCategories.length === 1) {
+      if (effectiveCategories && effectiveCategories.length === 1) {
         // Intención pura de categoría ("tengo hambre" → food) o chip de categoría.
         const result = await this.repository.listByCategory(effectiveCategories[0], {
           latitude: origin.latitude,
@@ -115,24 +162,11 @@ export class PlaceSearchService {
       throw error;
     }
 
-    // Ranking: relevancia de búsqueda cuando hay intención de texto; ranking de
-    // conveniencia (apertura/distancia/…) al navegar por categoría o entorno.
     let ranked = intent
       ? rankSearchResults(places, intent, origin, now)
       : rankPlaces(places, origin, now);
-
-    // "Abierto ahora" veraz: solo filtra si hay horarios reales; con datos sin
-    // horario (City Pack) preserva los resultados y avisa que no se confirman.
-    let notice: SearchNotice | undefined;
-    const wantsOpenNow = openNow || (intent?.openNow ?? false);
-    if (wantsOpenNow) {
-      const anyHours = ranked.some((scored) => scored.status.state !== 'unknown');
-      if (anyHours) {
-        ranked = ranked.filter((scored) => scored.status.state === 'open');
-      } else {
-        notice = 'HOURS_UNAVAILABLE';
-      }
-    }
+    const openNowResult = this.applyOpenNow(ranked, openNow || (intent?.openNow ?? false));
+    ranked = openNowResult.ranked;
 
     if (sort === 'distance') {
       ranked = [...ranked].sort((a, b) => a.distanceKm - b.distanceKm);
@@ -151,8 +185,61 @@ export class PlaceSearchService {
       results: ranked,
       ...(nextCursor !== undefined ? { nextCursor } : {}),
       ...(intent ? { intent } : {}),
-      ...(notice ? { notice } : {}),
+      ...(openNowResult.notice ? { notice: openNowResult.notice } : {}),
     };
+  }
+
+  /**
+   * Reúne TODOS los candidatos de texto válidos recorriendo la paginación del
+   * repositorio (mismo contrato e índices existentes) y deduplicando por id
+   * canónico. Necesario para rankear globalmente antes de paginar. Acotado por
+   * cotas de seguridad: nunca es un escaneo completo del país.
+   */
+  private async collectAllTextCandidates(
+    text: string,
+    origin: Coordinates,
+    categories: CategoryId[] | undefined,
+  ): Promise<LocavoPlace[]> {
+    const byId = new Map<string, LocavoPlace>();
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const result = await this.repository.searchText({
+        text,
+        latitude: origin.latitude,
+        longitude: origin.longitude,
+        categories,
+        limit: FETCH_LIMIT,
+        cursor,
+      });
+      for (const place of result.places) {
+        if (!byId.has(place.id)) {
+          byId.set(place.id, place);
+        }
+      }
+      cursor = result.nextCursor;
+      pages += 1;
+    } while (cursor !== undefined && byId.size < MAX_RANKING_CANDIDATES && pages < MAX_FETCH_PAGES);
+    return [...byId.values()];
+  }
+
+  /**
+   * Filtro/aviso VERAZ de "abierto ahora" sobre un conjunto ya rankeado: solo
+   * filtra si existen horarios reales; con datos sin horario (City Pack)
+   * preserva los resultados y avisa que no se confirman.
+   */
+  private applyOpenNow(
+    ranked: ScoredPlace[],
+    wants: boolean,
+  ): { ranked: ScoredPlace[]; notice?: SearchNotice } {
+    if (!wants) {
+      return { ranked };
+    }
+    const anyHours = ranked.some((scored) => scored.status.state !== 'unknown');
+    if (anyHours) {
+      return { ranked: ranked.filter((scored) => scored.status.state === 'open') };
+    }
+    return { ranked, notice: 'HOURS_UNAVAILABLE' };
   }
 
   async getById(id: string): Promise<LocavoPlace | null> {
