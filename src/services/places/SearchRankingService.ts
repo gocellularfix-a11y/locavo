@@ -5,6 +5,7 @@ import type { Coordinates } from '../../domain/place';
 import type { LocavoPlace } from '../../domain/places/LocavoPlace';
 import type { SearchIntent } from '../../domain/searchIntent';
 import { completenessOf, type RecommendationReason, type ScoredPlace } from './PlaceRankingService';
+import { SEARCH_RANKING_CONFIG } from './SearchRankingConfig';
 
 /**
  * Ranking de BÚSQUEDA (V4D): determinista, explicable y sin datos inventados.
@@ -27,17 +28,21 @@ import { completenessOf, type RecommendationReason, type ScoredPlace } from './P
  *  9. desempate final estable: nombre y luego id
  */
 
-const W_EXACT_NAME = 1000;
-const W_NAME_PREFIX = 500;
-const W_NAME_TOKEN = 200;
-const W_CATEGORY = 80;
-const W_TERM = 30;
-const W_MULTI_TERM = 10;
-const W_COMPLETENESS = 5;
-const DISTANCE_HORIZON_KM = 8;
-const W_DISTANCE_BASE = 15;
-const W_DISTANCE_NEARBY = 40;
-const NEARBY_KM = 2;
+// Pesos y umbrales extraídos a la configuración canónica (V4E.1). Se
+// destructuran a los MISMOS nombres de const para que el cuerpo del ranking
+// quede byte-idéntico: mismos valores → mismo score → mismo orden.
+const {
+  exactName: W_EXACT_NAME,
+  namePrefix: W_NAME_PREFIX,
+  nameToken: W_NAME_TOKEN,
+  category: W_CATEGORY,
+  term: W_TERM,
+  multiTerm: W_MULTI_TERM,
+  completeness: W_COMPLETENESS,
+  distanceBase: W_DISTANCE_BASE,
+  distanceNearby: W_DISTANCE_NEARBY,
+} = SEARCH_RANKING_CONFIG.weights;
+const { distanceHorizonKm: DISTANCE_HORIZON_KM, nearbyKm: NEARBY_KM } = SEARCH_RANKING_CONFIG;
 
 function wordSet(normalized: string): Set<string> {
   return new Set(normalized.split(' ').filter((w) => w.length > 0));
