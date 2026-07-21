@@ -113,6 +113,12 @@ export const de: TranslationCatalog = {
   'reason.and': ' und ',
   'reason.separator': ', ',
   'reason.fallback': 'Dies ist die günstigste Option unter den verfügbaren Ergebnissen.',
+  'reason.EXACT_NAME_MATCH': 'es genau deiner Suche entspricht',
+  'reason.NAME_MATCH': 'sein Name deiner Suche entspricht',
+  'reason.NAME_AND_ACTIVITY': 'Name und Tätigkeit übereinstimmen',
+  'reason.CATEGORY_MATCH': 'es zur gesuchten Kategorie passt',
+  'reason.TERM_MATCH': 'es deiner Suche entspricht',
+  'search.hoursUnconfirmed': 'Öffnungszeiten sind nicht bestätigt; Ergebnisse nach Relevanz.',
 
   'place.directions': 'Route',
   'place.directionsHint': 'Öffnet Google Maps mit der Route zum Ort',

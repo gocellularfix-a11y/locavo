@@ -110,6 +110,12 @@ export const zhCN: TranslationCatalog = {
   'reason.and': '、',
   'reason.separator': '、',
   'reason.fallback': '这是现有结果中最合适的选择。',
+  'reason.EXACT_NAME_MATCH': '与你的搜索完全匹配',
+  'reason.NAME_MATCH': '名称与你的搜索匹配',
+  'reason.NAME_AND_ACTIVITY': '名称和经营内容都匹配',
+  'reason.CATEGORY_MATCH': '与你搜索的类别匹配',
+  'reason.TERM_MATCH': '与你的搜索匹配',
+  'search.hoursUnconfirmed': '营业时间未确认；按相关性显示结果。',
 
   'place.directions': '路线',
   'place.directionsHint': '在 Google 地图中打开前往该地点的路线',

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CategoryId } from '../domain/place';
+import type { SearchIntent } from '../domain/searchIntent';
 import { placeSearchService } from '../services/container';
 import type { ScoredPlace } from '../services/places/PlaceRankingService';
+import type { SearchNotice } from '../services/places/PlaceSearchService';
 import { useLocationState } from '../state/LocationContext';
 
 export type QueryStatus = 'loading' | 'ready' | 'error';
@@ -27,6 +29,10 @@ export interface PlacesQueryResult {
   /** Carga la siguiente página y la anexa sin duplicados. */
   loadMore: () => void;
   reload: () => void;
+  /** Interpretación de la consulta de texto (V4D), si la hubo. */
+  intent: SearchIntent | null;
+  /** Aviso truthful (p. ej. horarios no confirmados). Null si no aplica. */
+  notice: SearchNotice | null;
 }
 
 /**
@@ -55,6 +61,8 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
   const [status, setStatus] = useState<QueryStatus>('loading');
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [intent, setIntent] = useState<SearchIntent | null>(null);
+  const [notice, setNotice] = useState<SearchNotice | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestSeq = useRef(0);
 
@@ -73,6 +81,8 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
         if (!cancelled && seq === requestSeq.current) {
           setResults(response.results);
           setNextCursor(response.nextCursor);
+          setIntent(response.intent ?? null);
+          setNotice(response.notice ?? null);
           setLoadingMore(false);
           setStatus('ready');
         }
@@ -130,5 +140,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
     hasMore: nextCursor !== undefined,
     loadMore,
     reload,
+    intent,
+    notice,
   };
 }

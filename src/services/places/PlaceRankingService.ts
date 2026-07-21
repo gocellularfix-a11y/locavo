@@ -15,11 +15,18 @@ import { individualVerificationDateOf, type LocavoPlace } from '../../domain/pla
  */
 
 export type RecommendationReason =
+  // Conveniencia (recomendación / navegación por categoría)
   | 'OPEN_NOW'
   | 'NEARBY'
   | 'RECENTLY_VERIFIED'
   | 'HIGH_CONFIDENCE'
-  | 'COMPLETE_INFORMATION';
+  | 'COMPLETE_INFORMATION'
+  // Relevancia de búsqueda (V4D): por qué un resultado coincide con la consulta
+  | 'EXACT_NAME_MATCH'
+  | 'NAME_MATCH'
+  | 'NAME_AND_ACTIVITY'
+  | 'CATEGORY_MATCH'
+  | 'TERM_MATCH';
 
 export interface ScoredPlace {
   place: LocavoPlace;
@@ -125,6 +132,11 @@ const REASON_PHRASES: Record<RecommendationReason, string> = {
   RECENTLY_VERIFIED: 'su información fue verificada recientemente',
   HIGH_CONFIDENCE: 'su información es de alta confianza',
   COMPLETE_INFORMATION: 'su información está completa',
+  EXACT_NAME_MATCH: 'coincide exactamente con tu búsqueda',
+  NAME_MATCH: 'el nombre coincide con tu búsqueda',
+  NAME_AND_ACTIVITY: 'el nombre y la actividad coinciden',
+  CATEGORY_MATCH: 'coincide con la categoría buscada',
+  TERM_MATCH: 'coincide con tu búsqueda',
 };
 
 /**

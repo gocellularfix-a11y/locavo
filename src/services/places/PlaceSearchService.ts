@@ -1,7 +1,10 @@
 import type { PlaceRepository } from '../../data/places/PlaceRepository';
 import type { CategoryId, Coordinates } from '../../domain/place';
 import type { LocavoPlace } from '../../domain/places/LocavoPlace';
+import { interpretQuery } from '../../domain/queryInterpreter';
+import type { SearchIntent } from '../../domain/searchIntent';
 import { rankPlaces, type ScoredPlace } from './PlaceRankingService';
+import { rankSearchResults } from './SearchRankingService';
 import type { AnalyticsService } from '../analytics';
 
 /**
@@ -23,10 +26,17 @@ export interface PlaceSearchRequest {
   cursor?: string;
 }
 
+/** Aviso truthful mostrado por la UI (sin afirmar datos que no existen). */
+export type SearchNotice = 'HOURS_UNAVAILABLE';
+
 export interface PlaceSearchResponse {
   results: ScoredPlace[];
   /** Presente cuando hay más resultados; pásalo en la siguiente petición. */
   nextCursor?: string;
+  /** Interpretación de la consulta de texto (V4D), si la hubo. */
+  intent?: SearchIntent;
+  /** Aviso truthful (p. ej. horarios no confirmados ante "abierto ahora"). */
+  notice?: SearchNotice;
 }
 
 const DEFAULT_NEARBY_RADIUS_M = 20_000;
@@ -41,6 +51,18 @@ export class PlaceSearchService {
   async search(request: PlaceSearchRequest): Promise<PlaceSearchResponse> {
     const { origin, category = null, text = '', openNow = false, sort = 'best', cursor } = request;
     const trimmed = text.trim();
+    const now = new Date();
+
+    // Interpretación de la consulta (V4D): intención, categorías, cercanía…
+    const intent: SearchIntent | undefined =
+      trimmed.length > 0 ? interpretQuery(trimmed) : undefined;
+    // Categorías efectivas: filtro explícito (chip) o intención inferida. Acota
+    // la carga del repositorio y mejora la relevancia sin cargar todo el pack.
+    const effectiveCategories: CategoryId[] | undefined = category
+      ? [category]
+      : intent && intent.categories.length > 0
+        ? intent.categories
+        : undefined;
 
     this.analytics.track({
       eventName: 'place_search_started',
@@ -51,19 +73,21 @@ export class PlaceSearchService {
     let places: LocavoPlace[];
     let nextCursor: string | undefined;
     try {
-      if (trimmed.length > 0) {
+      if (intent && intent.searchText.length > 0) {
+        // Búsqueda por texto con los términos interpretados (relleno removido).
         const result = await this.repository.searchText({
-          text: trimmed,
+          text: intent.searchText,
           latitude: origin.latitude,
           longitude: origin.longitude,
-          categories: category ? [category] : undefined,
+          categories: effectiveCategories,
           limit: FETCH_LIMIT,
           cursor,
         });
         places = result.places;
         nextCursor = result.nextCursor;
-      } else if (category) {
-        const result = await this.repository.listByCategory(category, {
+      } else if (effectiveCategories && effectiveCategories.length === 1) {
+        // Intención pura de categoría ("tengo hambre" → food) o chip de categoría.
+        const result = await this.repository.listByCategory(effectiveCategories[0], {
           latitude: origin.latitude,
           longitude: origin.longitude,
           limit: FETCH_LIMIT,
@@ -72,6 +96,7 @@ export class PlaceSearchService {
         places = result.places;
         nextCursor = result.nextCursor;
       } else {
+        // Sin texto ni categoría (o "cerca" a secas): explorar el entorno.
         const result = await this.repository.searchNearby({
           latitude: origin.latitude,
           longitude: origin.longitude,
@@ -90,10 +115,25 @@ export class PlaceSearchService {
       throw error;
     }
 
-    let ranked = rankPlaces(places, origin, new Date());
-    if (openNow) {
-      ranked = ranked.filter((scored) => scored.status.state === 'open');
+    // Ranking: relevancia de búsqueda cuando hay intención de texto; ranking de
+    // conveniencia (apertura/distancia/…) al navegar por categoría o entorno.
+    let ranked = intent
+      ? rankSearchResults(places, intent, origin, now)
+      : rankPlaces(places, origin, now);
+
+    // "Abierto ahora" veraz: solo filtra si hay horarios reales; con datos sin
+    // horario (City Pack) preserva los resultados y avisa que no se confirman.
+    let notice: SearchNotice | undefined;
+    const wantsOpenNow = openNow || (intent?.openNow ?? false);
+    if (wantsOpenNow) {
+      const anyHours = ranked.some((scored) => scored.status.state !== 'unknown');
+      if (anyHours) {
+        ranked = ranked.filter((scored) => scored.status.state === 'open');
+      } else {
+        notice = 'HOURS_UNAVAILABLE';
+      }
     }
+
     if (sort === 'distance') {
       ranked = [...ranked].sort((a, b) => a.distanceKm - b.distanceKm);
     }
@@ -107,7 +147,12 @@ export class PlaceSearchService {
       metadata: { resultCount: ranked.length },
     });
 
-    return nextCursor !== undefined ? { results: ranked, nextCursor } : { results: ranked };
+    return {
+      results: ranked,
+      ...(nextCursor !== undefined ? { nextCursor } : {}),
+      ...(intent ? { intent } : {}),
+      ...(notice ? { notice } : {}),
+    };
   }
 
   async getById(id: string): Promise<LocavoPlace | null> {

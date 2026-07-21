@@ -113,6 +113,12 @@ export const fr: TranslationCatalog = {
   'reason.and': ' et ',
   'reason.separator': ', ',
   'reason.fallback': "C'est l'option la plus pratique parmi les résultats disponibles.",
+  'reason.EXACT_NAME_MATCH': 'il correspond exactement à votre recherche',
+  'reason.NAME_MATCH': 'son nom correspond à votre recherche',
+  'reason.NAME_AND_ACTIVITY': 'son nom et son activité correspondent',
+  'reason.CATEGORY_MATCH': 'il correspond à la catégorie recherchée',
+  'reason.TERM_MATCH': 'il correspond à votre recherche',
+  'search.hoursUnconfirmed': "Les horaires ne sont pas confirmés ; résultats affichés par pertinence.",
 
   'place.directions': 'Itinéraire',
   'place.directionsHint': "Ouvre Google Maps avec l'itinéraire vers ce lieu",

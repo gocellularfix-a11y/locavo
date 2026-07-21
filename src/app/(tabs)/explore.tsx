@@ -116,12 +116,13 @@ export default function ExploreScreen() {
     }
   }
 
-  const { status, results, recommended, reload, hasMore, loadingMore, loadMore } = usePlacesQuery({
-    category,
-    query,
-    openOnly,
-    sort: sortByDistance ? 'distance' : 'best',
-  });
+  const { status, results, recommended, reload, hasMore, loadingMore, loadMore, notice } =
+    usePlacesQuery({
+      category,
+      query,
+      openOnly,
+      sort: sortByDistance ? 'distance' : 'best',
+    });
 
   useEffect(() => {
     if (recommended) {
@@ -243,6 +244,16 @@ export default function ExploreScreen() {
             : undefined
         }
       />
+
+      {/* Aviso truthful: horarios no confirmados ante intención de "abierto". */}
+      {notice === 'HOURS_UNAVAILABLE' ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Ionicons name="time-outline" size={16} color={colors.warning} />
+          <AppText variant="caption" tone="secondary" style={{ flex: 1 }}>
+            {t('search.hoursUnconfirmed')}
+          </AppText>
+        </View>
+      ) : null}
 
       <ScrollView
         horizontal

@@ -111,6 +111,12 @@ export const en: TranslationCatalog = {
   'reason.and': ' and ',
   'reason.separator': ', ',
   'reason.fallback': 'It is the most convenient option among the available results.',
+  'reason.EXACT_NAME_MATCH': 'it exactly matches your search',
+  'reason.NAME_MATCH': 'its name matches your search',
+  'reason.NAME_AND_ACTIVITY': 'its name and activity match',
+  'reason.CATEGORY_MATCH': 'it matches the category you searched',
+  'reason.TERM_MATCH': 'it matches your search',
+  'search.hoursUnconfirmed': "Opening hours aren't confirmed; showing matches by relevance.",
 
   'place.directions': 'Directions',
   'place.directionsHint': 'Opens Google Maps with the route to this place',

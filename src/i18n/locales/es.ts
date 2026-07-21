@@ -127,6 +127,12 @@ export const es = {
   'reason.and': ' y ',
   'reason.separator': ', ',
   'reason.fallback': 'Es la opción más conveniente entre los resultados disponibles.',
+  'reason.EXACT_NAME_MATCH': 'coincide exactamente con tu búsqueda',
+  'reason.NAME_MATCH': 'el nombre coincide con tu búsqueda',
+  'reason.NAME_AND_ACTIVITY': 'el nombre y la actividad coinciden',
+  'reason.CATEGORY_MATCH': 'coincide con la categoría buscada',
+  'reason.TERM_MATCH': 'coincide con tu búsqueda',
+  'search.hoursUnconfirmed': 'Los horarios no están confirmados; muestro coincidencias por relevancia.',
 
   // Detalle del lugar
   'place.directions': 'Cómo llegar',
