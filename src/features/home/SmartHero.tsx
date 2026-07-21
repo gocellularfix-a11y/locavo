@@ -54,23 +54,25 @@ export function SmartHero({
           borderRadius: radii.cardLarge,
           borderWidth: 1,
           borderColor: colors.border,
-          padding: spacing.xl,
-          gap: spacing.lg,
+          // Hero compacto: soporta las categorías, no domina la pantalla.
+          padding: spacing.lg,
+          gap: spacing.md,
         },
         cardShadow,
       ]}
     >
-      <AppText variant="display" accessibilityRole="header">
+      <AppText variant="title" accessibilityRole="header">
         {t('home.heroTitle')}
       </AppText>
 
       {/* Sin región viva: el lector no anuncia cada rotación automática,
-          pero la sugerencia visible sí es enfocable y legible. */}
-      <View style={{ minHeight: 24, justifyContent: 'center' }}>
+          pero la sugerencia visible sí es enfocable y legible. Una sola línea
+          para mantener el hero bajo. */}
+      <View style={{ minHeight: 22, justifyContent: 'center' }}>
         <Animated.View
           style={{ opacity: rotation.opacity, transform: [{ translateY: rotation.translateY }] }}
         >
-          <AppText variant="bodyStrong" tone="secondary" numberOfLines={2}>
+          <AppText variant="bodyStrong" tone="secondary" numberOfLines={1}>
             {currentSuggestion}
           </AppText>
         </Animated.View>

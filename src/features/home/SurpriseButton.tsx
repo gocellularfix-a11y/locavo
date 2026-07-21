@@ -64,10 +64,11 @@ export function SurpriseButton({ onPress, disabled = false, breathe = false }: S
         accessibilityHint={t('home.surpriseHint')}
         accessibilityState={{ disabled, busy: disabled }}
         style={({ pressed }) => ({
-          minHeight: 56,
+          // Compacto (Home above-the-fold) pero cómodo y muy sobre 44×44.
+          minHeight: 48,
           borderRadius: radii.button,
           paddingHorizontal: spacing.xl,
-          paddingVertical: spacing.md,
+          paddingVertical: spacing.sm,
           backgroundColor: pressed ? colors.brandPressed : colors.brand,
           opacity: disabled ? 0.6 : 1,
           flexDirection: 'row',

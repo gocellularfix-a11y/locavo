@@ -1,18 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, useWindowDimensions, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
-import { CategoryCard } from '../../components/CategoryCard';
 import { LoadingState } from '../../components/FeedbackStates';
 import { LocavoWordmark } from '../../components/LocavoWordmark';
 import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
 import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
-import { FeaturedCategoryCard } from '../../features/home/FeaturedCategoryCard';
+import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
@@ -24,15 +23,11 @@ import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 
-/** Jerarquía visual: las primeras 4 categorías del catálogo son destacadas. */
-const FEATURED_COUNT = 4;
-
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, mode, setMode } = useAppTheme();
   const { t, locale } = useI18n();
   const location = useLocationState();
-  const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
   const [surprising, setSurprising] = useState(false);
   const [surpriseFallback, setSurpriseFallback] = useState(false);
@@ -43,17 +38,6 @@ export default function HomeScreen() {
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
   const requestingLocation = location.requestState === 'requesting';
-
-  const featured = CATEGORIES.slice(0, FEATURED_COUNT);
-  const compact = CATEGORIES.slice(FEATURED_COUNT);
-  const columns = width >= 720 ? 4 : 2;
-  const compactRows = useMemo(() => {
-    const grouped: CategoryMeta[][] = [];
-    for (let i = 0; i < compact.length; i += columns) {
-      grouped.push(compact.slice(i, i + columns));
-    }
-    return grouped;
-  }, [compact, columns]);
 
   useEffect(() => {
     if (recommended) {
@@ -125,7 +109,9 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer>
-      <View style={{ gap: spacing.xxl }}>
+      {/* Ritmo vertical compacto para que el panel de categorías quede sobre
+          el pliegue en teléfonos modernos comunes. */}
+      <View style={{ gap: spacing.lg }}>
         {/* Encabezado de marca */}
         <View style={{ gap: spacing.xs }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
@@ -228,41 +214,8 @@ export default function HomeScreen() {
           fallbackMessage={surpriseFallback ? t('home.surpriseEmpty') : null}
         />
 
-        {/* Categorías: destacadas (2 niveles) + retícula compacta */}
-        <View style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            {featured.slice(0, 2).map((category) => (
-              <FeaturedCategoryCard
-                key={category.id}
-                category={category}
-                emphasis="large"
-                onPress={openCategory}
-              />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            {featured.slice(2, 4).map((category) => (
-              <FeaturedCategoryCard
-                key={category.id}
-                category={category}
-                emphasis="medium"
-                onPress={openCategory}
-              />
-            ))}
-          </View>
-          {compactRows.map((row, rowIndex) => (
-            <View key={rowIndex} style={{ flexDirection: 'row', gap: spacing.md }}>
-              {row.map((category) => (
-                <CategoryCard key={category.id} category={category} onPress={openCategory} />
-              ))}
-              {row.length < columns
-                ? Array.from({ length: columns - row.length }).map((_, i) => (
-                    <View key={`spacer-${i}`} style={{ flex: 1 }} />
-                  ))
-                : null}
-            </View>
-          ))}
-        </View>
+        {/* Panel de decisión: las 8 categorías primarias, 4×2, sobre el pliegue */}
+        <CategoryGrid categories={CATEGORIES} onSelect={openCategory} />
 
         {/* Recomendación inicial */}
         <View style={{ gap: spacing.md }}>
