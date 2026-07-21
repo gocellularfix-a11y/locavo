@@ -10,6 +10,7 @@ import { decodeDenueBytes } from '../../../data/import/denue/encoding';
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
 import type { Coordinates } from '../../../domain/place';
 import { translateIn } from '../../../i18n/I18nContext';
+import type { TranslationKey } from '../../../i18n/locales/es';
 import { SUPPORTED_LOCALES } from '../../../i18n/types';
 import type { AnalyticsService } from '../../analytics';
 import { PlaceSearchService } from '../PlaceSearchService';
@@ -168,7 +169,7 @@ describe('V4D · búsqueda inteligente (datos reales)', () => {
       expect(SUPPORTED_LOCALES).toHaveLength(7);
       for (const locale of SUPPORTED_LOCALES) {
         for (const code of codes) {
-          const key = `reason.${code}`;
+          const key = `reason.${code}` as TranslationKey;
           const text = translateIn(locale, key);
           expect(text.trim().length).toBeGreaterThan(0);
           expect(text).not.toBe(key);
