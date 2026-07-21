@@ -1,7 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { CATEGORY_GRID_COLUMNS, CATEGORY_LABEL_LINES } from '../CategoryGrid';
+import {
+  categoryLabelMaxLines,
+  CATEGORY_GRID_COLUMNS,
+  CATEGORY_LABEL_LINES,
+} from '../CategoryGrid';
 import { FEATURE_FLAGS } from '../../../config/featureFlags';
 import { CityPackRepository } from '../../../data/places/citypack/CityPackRepository';
 import { createPlaceRepository } from '../../../data/places/createPlaceRepository';
@@ -83,9 +87,20 @@ describe('Home above-the-fold — retícula de categorías', () => {
   it('cada baldosa tiene etiqueta de accesibilidad y límite de líneas controlado', () => {
     expect(grid).toMatch(/accessibilityRole="button"/);
     expect(grid).toMatch(/accessibilityLabel=\{t\('category\.a11y'/);
-    expect(grid).toMatch(/numberOfLines=\{CATEGORY_LABEL_LINES\}/);
+    // Máximo de líneas adaptativo por estructura de la etiqueta.
+    expect(grid).toMatch(/numberOfLines=\{maxLines\}/);
+    expect(grid).toMatch(/categoryLabelMaxLines\(label\)/);
+    expect(CATEGORY_LABEL_LINES).toBe(2); // tope global de líneas
+  });
+
+  it('tipografía adaptativa para palabras largas sin ruptura a mitad de palabra', () => {
+    // Fuente adaptativa (encoge la palabra larga a una línea) y sin guiones ni
+    // cortes agresivos en Android; centrado preservado.
     expect(grid).toMatch(/adjustsFontSizeToFit/);
-    expect(CATEGORY_LABEL_LINES).toBe(2);
+    expect(grid).toMatch(/minimumFontScale=\{0\.\d+\}/);
+    expect(grid).toMatch(/android_hyphenationFrequency="none"/);
+    expect(grid).toMatch(/textBreakStrategy="simple"/);
+    expect(grid).toMatch(/textAlign:\s*'center'/);
   });
 
   it('objetivo táctil cómodo (≥ 44) y escala sutil al presionar', () => {
@@ -137,6 +152,40 @@ describe('Home above-the-fold — el hero compacto conserva la inteligencia', ()
     expect(home).toMatch(/<SmartHero/);
     expect(home).toMatch(/onSurprise=\{surpriseMe\}/);
     expect(home).toMatch(/onSearchSubmit=\{submitSearch\}/);
+  });
+});
+
+describe('Home above-the-fold — líneas de etiqueta por estructura (7 idiomas)', () => {
+  it('máximo 2 líneas y nunca menos de 1', () => {
+    for (const category of CATEGORIES) {
+      for (const locale of SUPPORTED_LOCALES) {
+        const lines = categoryLabelMaxLines(translateIn(locale, categoryLabelKey(category.id)));
+        expect(lines).toBeGreaterThanOrEqual(1);
+        expect(lines).toBeLessThanOrEqual(CATEGORY_LABEL_LINES);
+      }
+    }
+  });
+
+  it('palabra única → 1 línea (fuente adaptativa); varias palabras → 2 líneas', () => {
+    for (const category of CATEGORIES) {
+      for (const locale of SUPPORTED_LOCALES) {
+        const label = translateIn(locale, categoryLabelKey(category.id));
+        const expected = /\s/.test(label.trim()) ? 2 : 1;
+        expect(categoryLabelMaxLines(label)).toBe(expected);
+      }
+    }
+  });
+
+  it('casos verificados: pt "Hospedagem" en 1 línea; "Postos de gasolina" en 2', () => {
+    // "Hospedagem" es una sola palabra → 1 línea (se adapta, no se parte).
+    expect(categoryLabelMaxLines(translateIn('pt', 'category.lodging'))).toBe(1);
+    // "Postos de gasolina" tiene espacios → 2 líneas, rompe en el espacio.
+    expect(categoryLabelMaxLines(translateIn('pt', 'category.gas'))).toBe(2);
+    // Alemán: las etiquetas largas son de una sola palabra → 1 línea adaptativa.
+    expect(categoryLabelMaxLines(translateIn('de', 'category.gas'))).toBe(1); // Tankstellen
+    expect(categoryLabelMaxLines(translateIn('de', 'category.lodging'))).toBe(1); // Unterkunft
+    // Chino: sin espacios, corto → 1 línea (sin cambios).
+    expect(categoryLabelMaxLines(translateIn('zh-CN', 'category.gas'))).toBe(1);
   });
 });
 

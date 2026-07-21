@@ -21,8 +21,19 @@ import { radii, spacing } from '../../theme/tokens';
  */
 export const CATEGORY_GRID_COLUMNS = 4;
 
-/** Límite de líneas de la etiqueta (evita romper la retícula con textos largos). */
+/** Máximo de líneas de la etiqueta (evita romper la retícula con textos largos). */
 export const CATEGORY_LABEL_LINES = 2;
+
+/**
+ * Líneas de una etiqueta según su ESTRUCTURA (no el idioma):
+ * - palabra única (sin espacios) → 1 línea + tamaño de fuente adaptativo, de
+ *   modo que una palabra larga se encoge para caber en una sola línea en vez
+ *   de romperse a mitad ("Hospedage/m");
+ * - varias palabras → hasta CATEGORY_LABEL_LINES, rompiendo SOLO en el espacio.
+ */
+export function categoryLabelMaxLines(label: string): 1 | typeof CATEGORY_LABEL_LINES {
+  return /\s/.test(label.trim()) ? CATEGORY_LABEL_LINES : 1;
+}
 
 export interface CategoryGridProps {
   categories: readonly CategoryMeta[];
@@ -48,6 +59,11 @@ function CategoryTile({
   const { t } = useI18n();
   const visual = getCategoryVisual(category.id, scheme);
   const label = t(categoryLabelKey(category.id));
+
+  // Solución tipográfica general (independiente del idioma): ver
+  // categoryLabelMaxLines. Palabra única larga → se adapta la fuente a una
+  // línea; varias palabras → hasta 2 líneas rompiendo en el espacio.
+  const maxLines = categoryLabelMaxLines(label);
 
   return (
     <Pressable
@@ -88,9 +104,16 @@ function CategoryTile({
       </View>
       <AppText
         variant="label"
-        numberOfLines={CATEGORY_LABEL_LINES}
+        // 1 línea para palabra única (se adapta la fuente); hasta 2 para
+        // varias palabras. Máximo global: CATEGORY_LABEL_LINES (2).
+        numberOfLines={maxLines}
         adjustsFontSizeToFit
-        minimumFontScale={0.85}
+        // Piso bajo SOLO para que una palabra larga quepa en su línea; las
+        // etiquetas normales que ya caben no se encogen.
+        minimumFontScale={0.7}
+        // Android: sin guiones ni cortes agresivos; romper en el espacio.
+        android_hyphenationFrequency="none"
+        textBreakStrategy="simple"
         style={{ textAlign: 'center' }}
       >
         {label}
