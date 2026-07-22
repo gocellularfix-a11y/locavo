@@ -12,6 +12,8 @@ import {
   type RuntimePackManifest,
   type SearchShard,
 } from './RuntimePackFormat';
+import { applyOsmEnrichment } from '../../osm/applyOsmEnrichment';
+import type { OsmEnrichmentIndex } from '../../osm/OsmEnrichment';
 import { getCategoryMeta } from '../../../domain/categories';
 import { haversineKm } from '../../../domain/distance';
 import { evaluateOpenStatus } from '../../../domain/openingHours';
@@ -57,6 +59,13 @@ const BOUNDS_SLACK_KM = 0.75;
 export interface CityPackRepositoryOptions {
   maxCachedChunks?: number;
   maxCachedShards?: number;
+  /**
+   * Proveedor OPCIONAL del índice de enriquecimiento OSM (V4F-0). Solo se
+   * inyecta con `enableOpenStreetMapProvider` encendido. Ausente (por defecto)
+   * → cero cambios de comportamiento. Un fallo del proveedor degrada a "sin
+   * enriquecimiento" sin romper la carga del pack.
+   */
+  enrichmentProvider?: () => Promise<OsmEnrichmentIndex | null>;
 }
 
 export class CityPackRepository implements PlaceRepository {
@@ -69,6 +78,10 @@ export class CityPackRepository implements PlaceRepository {
   private readonly shardCache = new Map<string, SearchShard>();
   private readonly maxCachedChunks: number;
   private readonly maxCachedShards: number;
+  private readonly enrichmentProvider?: () => Promise<OsmEnrichmentIndex | null>;
+  private enrichmentIndex: OsmEnrichmentIndex | null = null;
+  private enrichmentLoaded = false;
+  private enrichmentPromise: Promise<OsmEnrichmentIndex | null> | null = null;
 
   constructor(
     private readonly loader: CityPackAssetLoader,
@@ -77,6 +90,26 @@ export class CityPackRepository implements PlaceRepository {
   ) {
     this.maxCachedChunks = options.maxCachedChunks ?? DEFAULT_MAX_CACHED_CHUNKS;
     this.maxCachedShards = options.maxCachedShards ?? DEFAULT_MAX_CACHED_SHARDS;
+    this.enrichmentProvider = options.enrichmentProvider;
+  }
+
+  /**
+   * Índice de enriquecimiento OSM (memoizado). Sin proveedor → null. Un fallo
+   * de carga/parseo degrada a null (sin enriquecimiento), nunca lanza.
+   */
+  private async ensureEnrichment(): Promise<OsmEnrichmentIndex | null> {
+    if (!this.enrichmentProvider) {
+      return null;
+    }
+    if (this.enrichmentLoaded) {
+      return this.enrichmentIndex;
+    }
+    if (!this.enrichmentPromise) {
+      this.enrichmentPromise = this.enrichmentProvider().catch(() => null);
+    }
+    this.enrichmentIndex = await this.enrichmentPromise;
+    this.enrichmentLoaded = true;
+    return this.enrichmentIndex;
   }
 
   // ── Contrato PlaceRepository ─────────────────────────────────────────
@@ -481,7 +514,17 @@ export class CityPackRepository implements PlaceRepository {
     }
     const raw = await this.loader.load(info.name);
     const chunk = assertRuntimeChunk(JSON.parse(raw), info.name);
-    const places = chunk.places.map(cityPackPlaceToLocavoPlace);
+    const hydrated = chunk.places.map(cityPackPlaceToLocavoPlace);
+
+    // Merge OSM (V4F-0): tras hidratar, detrás del flag y de forma append-only.
+    // Sin proveedor (flag OFF) → `places === hydrated`, sin cambios.
+    const enrichment = await this.ensureEnrichment();
+    const places = enrichment
+      ? hydrated.map((place) => {
+          const entry = enrichment.get(place.id);
+          return entry ? applyOsmEnrichment(place, entry) : place;
+        })
+      : hydrated;
 
     this.chunkCache.set(chunkIndex, places);
     while (this.chunkCache.size > this.maxCachedChunks) {

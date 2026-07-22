@@ -2,6 +2,11 @@ import { CityPackRepository } from './citypack/CityPackRepository';
 import type { CityPackAssetLoader } from './citypack/CityPackAssetLoader';
 import { createPlatformCityPackLoader } from './citypack/createPlatformCityPackLoader';
 import { LocalPlaceRepository } from './LocalPlaceRepository';
+import {
+  assertEnrichmentSidecar,
+  indexEnrichmentSidecar,
+  type OsmEnrichmentIndex,
+} from '../osm/OsmEnrichment';
 import type { PlaceRepository } from './PlaceRepository';
 import { FEATURE_FLAGS, isCityPackEnabled, type FeatureFlags } from '../../config/featureFlags';
 import { readSupabaseConfig, type SupabaseConfig } from '../../config/supabaseConfig';
@@ -37,7 +42,16 @@ export function createPlaceRepository(
   }
   if (isCityPackEnabled(flags)) {
     const loader = cityPackLoader ?? createPlatformCityPackLoader();
-    return new CityPackRepository(loader, new LocalPlaceRepository());
+    // V4F-0: enriquecimiento OSM SOLO con el flag encendido (OFF por defecto).
+    // El proveedor carga el sidecar por el mismo loader; un fallo degrada a
+    // "sin enriquecimiento" dentro del repositorio (no rompe la carga del pack).
+    const enrichmentProvider = flags.enableOpenStreetMapProvider
+      ? async (): Promise<OsmEnrichmentIndex> => {
+          const raw = await loader.load('osm-enrichment.json');
+          return indexEnrichmentSidecar(assertEnrichmentSidecar(JSON.parse(raw)));
+        }
+      : undefined;
+    return new CityPackRepository(loader, new LocalPlaceRepository(), { enrichmentProvider });
   }
   return new LocalPlaceRepository();
 }

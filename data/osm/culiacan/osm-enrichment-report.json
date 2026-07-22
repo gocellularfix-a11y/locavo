@@ -1,0 +1,761 @@
+{
+  "totals": {
+    "denue": 500,
+    "autoSafe": 3,
+    "ambiguous": 24,
+    "noMatch": 473
+  },
+  "autoSafeByReason": {
+    "nearby_coordinates+same_category+same_website+similar_name": 2,
+    "nearby_coordinates+same_category+same_phone": 1
+  },
+  "candidateStats": {
+    "placesWithCandidates": 105,
+    "totalCandidatesEvaluated": 141,
+    "maxCandidatesForAPlace": 11
+  },
+  "coverage": {
+    "phone": 2,
+    "website": 3,
+    "opening_hours": 0,
+    "wheelchair": 2,
+    "outdoor_seating": 0,
+    "parking": 0,
+    "delivery": 0,
+    "internet_access": 3,
+    "cuisine": 0
+  },
+  "conflicts": {
+    "phoneDiffers": 0,
+    "websiteDiffers": 0,
+    "wheelchairNo": 0,
+    "wheelchairLimited": 0,
+    "hoursUnsupported": 0
+  },
+  "distanceStats": {
+    "autoSafeMedianMeters": 35.02404904842903,
+    "p90Meters": 50.79853864973782,
+    "p95Meters": 50.79853864973782,
+    "over100m": 0,
+    "over250m": 0
+  },
+  "ambiguous": [
+    {
+      "locavoPlaceId": "031c6a3c-e38a-5b66-879a-da7f006ad832",
+      "denueName": "GASOLINERA ARCA",
+      "category": "gas",
+      "latitude": 24.81674159,
+      "longitude": -107.5854242,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n4557847030",
+          "name": "",
+          "distanceMeters": 74.12492404417299,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n4557847078",
+          "name": "",
+          "distanceMeters": 45.04087528814798,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n4557847081",
+          "name": "",
+          "distanceMeters": 94.7684366180944,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "1776bc45-ea0d-5f81-8bf7-151aea4a1ed7",
+      "denueName": "HOTEL LA RIVIERA",
+      "category": "lodging",
+      "latitude": 24.81496192,
+      "longitude": -107.3956692,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n9683715999",
+          "name": "Hotel La Riviera",
+          "distanceMeters": 72.94752211486386,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "2eea364a-8d9a-52ab-a739-b6175c1e2986",
+      "denueName": "SUPER TORTILLERIA HEIDI",
+      "category": "store",
+      "latitude": 24.80514868,
+      "longitude": -107.4433599,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n3209529570",
+          "name": "Oxxo",
+          "distanceMeters": 77.64229516559836,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w202249488",
+          "name": "OXXO",
+          "distanceMeters": 82.0431600126327,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "3f2f800e-50ca-55a9-8b49-940823f642c2",
+      "denueName": "FARMACIAS EMERGENCIAS",
+      "category": "pharmacy",
+      "latitude": 24.81606154,
+      "longitude": -107.4405908,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n10555471772",
+          "name": "Farmacía Emergencia",
+          "distanceMeters": 4.612406045704683,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n10555471783",
+          "name": "Farmacia Dermatológica",
+          "distanceMeters": 39.004556783734195,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "48012d49-d121-563d-b2a3-cc193c5d0940",
+      "denueName": "PIZZETA DEL VALLE",
+      "category": "food",
+      "latitude": 24.77671932,
+      "longitude": -107.4462107,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "w615989989",
+          "name": "Pizzeta",
+          "distanceMeters": 29.330998064905202,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "4d284a99-61b1-59fb-9b4a-91e5d6dfb16e",
+      "denueName": "GASOLINERA SUGASO ESTACION 7329",
+      "category": "gas",
+      "latitude": 24.78018124,
+      "longitude": -107.3736971,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "w489129760",
+          "name": "Gasolinera",
+          "distanceMeters": 13.933419739013988,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "53060064-3972-511c-946e-ef00f25c567b",
+      "denueName": "NEO BUSSINES HOTEL",
+      "category": "lodging",
+      "latitude": 24.80769715,
+      "longitude": -107.3985352,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n9680851628",
+          "name": "Hotel Santa Fe Express",
+          "distanceMeters": 10.407071241739779,
+          "confidence": 0.7000000000000001,
+          "reasons": [
+            "same_website",
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "5701e1f4-aaee-5dd7-b667-c6ae0a078578",
+      "denueName": "SIX TECATE VILLAS DEL RIO",
+      "category": "beer",
+      "latitude": 24.80680652,
+      "longitude": -107.4510575,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n3209524871",
+          "name": "Tecate",
+          "distanceMeters": 4.4821620034587815,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "5a516bbb-8682-5a86-891c-63a3736722f9",
+      "denueName": "HOTEL FRANCIS",
+      "category": "lodging",
+      "latitude": 24.80656298,
+      "longitude": -107.3958236,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n9680758315",
+          "name": "Hotel Frances",
+          "distanceMeters": 6.014834579574969,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n9680824741",
+          "name": "Hotel Business by Grupo La Jolla",
+          "distanceMeters": 72.27128523901929,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "5d972a1d-68a2-555c-aa5f-00269898a68a",
+      "denueName": "MOTEL EL MORO",
+      "category": "lodging",
+      "latitude": 24.83163231,
+      "longitude": -107.4306548,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n5294127840",
+          "name": "Motel El Moro",
+          "distanceMeters": 21.956506960341173,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n5294127841",
+          "name": "Motel Marbella",
+          "distanceMeters": 78.8075259671972,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "714785ab-832b-526e-bb96-58aa8c884d65",
+      "denueName": "TACOS AL PASTOR DOÑA LETTY",
+      "category": "food",
+      "latitude": 24.78806233,
+      "longitude": -107.4236097,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n5684394107",
+          "name": "Daki Sushi",
+          "distanceMeters": 82.82463797282325,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n5684394113",
+          "name": "El Rincón Grande",
+          "distanceMeters": 121.23735047440317,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "7277d2a6-bfe1-5f0e-85c4-d65b06b3e4f9",
+      "denueName": "HOTEL LA QUINTA POSADA REAL",
+      "category": "lodging",
+      "latitude": 24.80413161,
+      "longitude": -107.3824378,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n9678402801",
+          "name": "Hotel La Quinta Posada Real",
+          "distanceMeters": 41.69162119896929,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "740971de-f46b-58e3-9d57-18c2c0b0e423",
+      "denueName": "TAQUERIA MORELOS",
+      "category": "food",
+      "latitude": 24.78881802,
+      "longitude": -107.4056085,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n4441459866",
+          "name": "Taquería Morelos",
+          "distanceMeters": 14.548300332506315,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "8693b452-1c69-5b30-95a8-f65b3ae98008",
+      "denueName": "ABARROTES MONICA",
+      "category": "store",
+      "latitude": 24.80447147,
+      "longitude": -107.4448253,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n3209529570",
+          "name": "Oxxo",
+          "distanceMeters": 144.09524169878026,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w202249488",
+          "name": "OXXO",
+          "distanceMeters": 141.71232376712612,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "8a25cb38-dcbd-5aa8-a72a-eedebc5cbc89",
+      "denueName": "FARMACIAS EMERGENCIAS",
+      "category": "pharmacy",
+      "latitude": 24.76085977,
+      "longitude": -107.4304418,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n2960533357",
+          "name": "",
+          "distanceMeters": 6.674152896666646,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n2960533358",
+          "name": "",
+          "distanceMeters": 34.54348149851715,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "914188d7-c7d8-5b5d-9fb9-e3238c922112",
+      "denueName": "FARMACIAS SIMILARES",
+      "category": "pharmacy",
+      "latitude": 24.83143819,
+      "longitude": -107.4203548,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n12547873322",
+          "name": "Similares",
+          "distanceMeters": 9.018021145924708,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "96d11cdc-2f99-55ed-9d8c-9475423695af",
+      "denueName": "MARISCOS EL PAISA",
+      "category": "food",
+      "latitude": 24.78671395,
+      "longitude": -107.4438494,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "w314898997",
+          "name": "Mariscos el Paisa Culiacán",
+          "distanceMeters": 53.032182660784414,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "b1fdd47c-c7a0-586e-8d20-f75d00433e64",
+      "denueName": "MOTEL Y SUITE LA CONQUISTA",
+      "category": "lodging",
+      "latitude": 24.83800054,
+      "longitude": -107.4366997,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "w659018962",
+          "name": "",
+          "distanceMeters": 134.02128974863297,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w659018963",
+          "name": "",
+          "distanceMeters": 132.539299495851,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w659018969",
+          "name": "",
+          "distanceMeters": 97.55347814320766,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w659018970",
+          "name": "",
+          "distanceMeters": 93.31321971864851,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w659018971",
+          "name": "",
+          "distanceMeters": 95.7648879178856,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "b7c4ea8e-39d4-5eff-8194-c71e14d32d8e",
+      "denueName": "DIAMOND GAS",
+      "category": "gas",
+      "latitude": 24.7747642,
+      "longitude": -107.4883832,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "w1230249626",
+          "name": "Chevron",
+          "distanceMeters": 40.87048494982416,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "w1230249627",
+          "name": "Chevron",
+          "distanceMeters": 13.190711893976433,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "c4b724ae-8be3-5f57-aa43-f09c5bd1af04",
+      "denueName": "ESTACIONAMIENTO HOTEL DEL VALLE",
+      "category": "lodging",
+      "latitude": 24.80236883,
+      "longitude": -107.3920393,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n9678348771",
+          "name": "Hotel del Valle",
+          "distanceMeters": 52.05251436610505,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "d75d7b91-6985-5b12-bbe5-e20d1fc1d923",
+      "denueName": "1CULF ONE CULIACAN FORUM",
+      "category": "lodging",
+      "latitude": 24.81579915,
+      "longitude": -107.4003145,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n9683697260",
+          "name": "One Culiacán Fórum",
+          "distanceMeters": 58.22426002789763,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "d7a041a1-b97c-5fb2-80c8-d2522ba903e3",
+      "denueName": "HOTEL EL MAYO",
+      "category": "lodging",
+      "latitude": 24.80432122,
+      "longitude": -107.401549,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n1646501874",
+          "name": "Hotel el Mayo",
+          "distanceMeters": 28.756897057537493,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "d8f606cc-f586-552e-b3ab-8603fa71ce2d",
+      "denueName": "FARMACIAS DE SIMILARES",
+      "category": "pharmacy",
+      "latitude": 24.76085609,
+      "longitude": -107.4301522,
+      "reason": "multiple-competitive",
+      "candidates": [
+        {
+          "osmId": "n2960533357",
+          "name": "",
+          "distanceMeters": 31.70119825023935,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n2960533358",
+          "name": "",
+          "distanceMeters": 38.252833367107705,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    },
+    {
+      "locavoPlaceId": "f35a1585-785b-5974-9f5c-97202eab714c",
+      "denueName": "TOKI ZUSHI",
+      "category": "food",
+      "latitude": 24.82439896,
+      "longitude": -107.3997737,
+      "reason": "confidence-floor",
+      "candidates": [
+        {
+          "osmId": "n2094283035",
+          "name": "Toki",
+          "distanceMeters": 37.57367996220351,
+          "confidence": 0.6000000000000001,
+          "reasons": [
+            "nearby_coordinates",
+            "similar_name",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n11429713643",
+          "name": "Burritos Burgos",
+          "distanceMeters": 5.853483653473065,
+          "confidence": 0.3,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n11413605266",
+          "name": "Mi Granja",
+          "distanceMeters": 137.09564002913558,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        },
+        {
+          "osmId": "n5572543419",
+          "name": "La Molcajetería",
+          "distanceMeters": 105.16341652002305,
+          "confidence": 0.16999999999999998,
+          "reasons": [
+            "nearby_coordinates",
+            "same_category"
+          ],
+          "categoryCompatible": true
+        }
+      ]
+    }
+  ],
+  "contention": []
+}

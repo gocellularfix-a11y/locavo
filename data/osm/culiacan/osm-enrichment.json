@@ -1,0 +1,87 @@
+{
+  "format": "locavo-osm-enrichment",
+  "schemaVersion": 1,
+  "pipelineVersion": 1,
+  "city": "culiacan",
+  "license": "ODbL 1.0",
+  "attribution": "© OpenStreetMap contributors",
+  "snapshotSource": "data/osm/culiacan/culiacan-osm-pilot.osm.pbf",
+  "configFingerprint": "722d0770",
+  "entries": [
+    {
+      "locavoPlaceId": "1aed4917-3505-5122-ab8a-fc9abf844ac1",
+      "osmId": "n2028662913",
+      "confidence": 1,
+      "reasons": [
+        "same_website",
+        "nearby_coordinates",
+        "similar_name",
+        "same_category"
+      ],
+      "distanceMeters": 35.02404904842903,
+      "nameSimilarity": 1,
+      "fields": {
+        "website": {
+          "value": "https://hoteleszar.com/culiacan/",
+          "ingested": false,
+          "reason": "denue-present"
+        },
+        "wheelchairAccessible": {
+          "value": true,
+          "ingested": true
+        }
+      }
+    },
+    {
+      "locavoPlaceId": "4c84a18b-8756-558e-8752-d65e11eac88d",
+      "osmId": "n9678471587",
+      "confidence": 1,
+      "reasons": [
+        "same_website",
+        "nearby_coordinates",
+        "similar_name",
+        "same_category"
+      ],
+      "distanceMeters": 50.79853864973782,
+      "nameSimilarity": 1,
+      "fields": {
+        "phone": {
+          "value": "+52 667 752 0470",
+          "ingested": true
+        },
+        "website": {
+          "value": "https://sanmarcos.com.mx/",
+          "ingested": false,
+          "reason": "denue-present"
+        },
+        "wheelchairAccessible": {
+          "value": true,
+          "ingested": true
+        }
+      }
+    },
+    {
+      "locavoPlaceId": "76e5c20c-5ad1-5315-ac28-630bebf7dc94",
+      "osmId": "n9678421490",
+      "confidence": 0.75,
+      "reasons": [
+        "same_phone",
+        "nearby_coordinates",
+        "same_category"
+      ],
+      "distanceMeters": 23.240546599592303,
+      "nameSimilarity": 0,
+      "fields": {
+        "phone": {
+          "value": "+52 667 7159100",
+          "ingested": false,
+          "reason": "denue-present"
+        },
+        "website": {
+          "value": "https://www.maxihotel.com.mx/",
+          "ingested": true
+        }
+      }
+    }
+  ]
+}

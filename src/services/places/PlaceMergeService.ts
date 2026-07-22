@@ -29,15 +29,22 @@ export interface PlaceMatchResult {
   likelySamePlace: boolean;
   confidence: number;
   reasons: PlaceMatchReason[];
+  /** Distancia canónica en metros (ya calculada; compartida, no recalculada). */
+  distanceMeters: number;
+  /** Similitud de nombre canónica 0–1 (ya calculada; compartida). */
+  nameSimilarity: number;
 }
 
 /** Umbral mínimo para considerar dos registros el mismo lugar. */
 export const MERGE_CONFIDENCE_THRESHOLD = 0.75;
 
-const NEARBY_STRONG_M = 75;
+/** Banda FUERTE de cercanía (m) — corroboración fuerte reconocida por el motor. */
+export const NEARBY_STRONG_M = 75;
+/** Umbral FUERTE de similitud de nombre — corroboración fuerte del motor. */
+export const STRONG_NAME_SIMILARITY = 0.8;
 const NEARBY_WEAK_M = 200;
 
-function normalizedDigits(phone: string | undefined): string | null {
+export function normalizedDigits(phone: string | undefined): string | null {
   if (!phone) {
     return null;
   }
@@ -46,7 +53,7 @@ function normalizedDigits(phone: string | undefined): string | null {
   return digits.length >= 10 ? digits.slice(-10) : digits.length > 0 ? digits : null;
 }
 
-function websiteDomain(url: string | undefined): string | null {
+export function websiteDomain(url: string | undefined): string | null {
   if (!url) {
     return null;
   }
@@ -95,7 +102,7 @@ export function matchPlaces(a: LocavoPlace, b: LocavoPlace): PlaceMatchResult {
 
   const distanceM = haversineKm(a.coordinates, b.coordinates) * 1000;
   const similarity = nameSimilarity(a.name, b.name);
-  const nameIsSimilar = similarity >= 0.8;
+  const nameIsSimilar = similarity >= STRONG_NAME_SIMILARITY;
   const nameIsClose = similarity >= 0.5;
 
   const phoneA = normalizedDigits(a.contact?.phone);
@@ -148,5 +155,7 @@ export function matchPlaces(a: LocavoPlace, b: LocavoPlace): PlaceMatchResult {
     likelySamePlace: hasStrongSignal && confidence >= MERGE_CONFIDENCE_THRESHOLD,
     confidence,
     reasons,
+    distanceMeters: distanceM,
+    nameSimilarity: similarity,
   };
 }

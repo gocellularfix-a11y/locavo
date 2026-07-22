@@ -22,6 +22,7 @@
     "citypack:stage": "tsx scripts/citypack/stage.ts",
     "citypack:bundle": "tsx scripts/citypack/build-bundled.ts",
     "osm:snapshot:verify": "tsx scripts/osm/verify-snapshot.ts",
+    "osm:enrichment:build": "tsx scripts/osm/build-enrichment.ts",
     "build:web": "npm run citypack:bundle && expo export --platform web",
     "acceptance:web": "npm run build:web && npx serve dist -l 4173",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build:web"
