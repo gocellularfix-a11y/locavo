@@ -166,3 +166,58 @@ V5.0 changes nothing about OSM matching or its runtime flag.
   enablement, untrusted OSM `website`/`phone` values must be scheme-validated
   before reaching `Linking.openURL` (`src/app/place/[id].tsx`). This is a hard
   gate for that separate milestone and is out of scope for V5.0.
+
+## 12. Candidate Retrieval (V5.3)
+
+Retrieval and ranking are **separate responsibilities** with a strict dependency
+direction:
+
+```
+Place Repository → Candidate Retrieval → V5.0 evaluation → V5.2 context re-rank → UI
+```
+
+`retrieveRecommendationCandidates` (`src/recommendationCandidates/`) answers only
+*which places the engine should evaluate*. It never computes scores, confidence,
+explanations, context boosts, UI labels, or Surprise hashing, and it has no React
+or UI dependency. It returns canonical `LocavoPlace[]` plus structured
+`CandidateRetrievalDiagnostics`.
+
+**Pipeline (deterministic):**
+1. Explicit category scope (or all 8 canonical categories).
+2. Complete per-category retrieval via cursor **pagination** (does not stop at
+   the first shard); one repository operation stream per category, chunk-cached.
+3. Canonical validation — reject records without a canonical id/category; when an
+   origin is present (geographic evaluation), reject invalid coordinates.
+4. **Deterministic deduplication by canonical id.** Identical duplicates collapse
+   silently (counted). Conflicting duplicates (same id, different content) never
+   use array position or sort stability: the winner is the lexicographically
+   smaller `JSON.stringify` and the conflict is counted. In practice the City
+   Pack guarantees unique canonical ids, so conflicts do not occur; the rule is
+   defensive.
+5. Explicit geographic radius filter (canonical `haversineKm`), applied only with
+   a valid origin and a finite radius > 0. `NaN`/`Infinity`/negative radius are
+   ignored (no crash); a missing origin skips distance filtering and ordering.
+6. Deterministic ordering: by distance ascending with an origin, tie-broken by
+   canonical id; without an origin, by canonical id.
+7. **Explicit safety limit** applied last, over the distance-ordered population
+   (default 100, ≤ the engine's `maxResultsCap`) — never hash truncation. This
+   preserves the strongest geographically relevant population before scoring.
+
+**Diagnostics** are returned separately and are testable/deterministic:
+`received = emitted + malformedExcluded + categoryExcluded + duplicatesRemoved +
+outsideRadiusExcluded + safetyLimitDropped` (plus `conflictingDuplicates` and
+`safetyLimitApplied`). They are not shown in the UI.
+
+**Repository failure** degrades safely: a category whose fetch throws contributes
+no candidates and never aborts retrieval.
+
+**Complexity:** `O(n)` validation/dedup/filter + `O(k log k)` only for the
+deterministic geographic ordering; `c` paginated repository operations (one per
+category), with chunks cached by the repository.
+
+**Today no longer depends on Surprise ordering.** `useToday` now calls
+`retrieveRecommendationCandidates` once, then V5.0 once over the full retrieved
+pool (`maxResults = pool size`, so nothing is truncated by hash), then context
+once, then `buildTodayModels` once. A strong nearby candidate can no longer be
+excluded by hash order before ranking. The standalone **Surprise** feature
+(`selectSurprisePlace`) is unchanged and still used elsewhere.
