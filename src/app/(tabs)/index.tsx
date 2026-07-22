@@ -13,6 +13,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
+import { RecommendationSection, useRecommendations } from '../../features/recommendations';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
@@ -22,6 +23,9 @@ import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
+
+/** Preferencias estables → el motor V5.0 se ejecuta una vez por ubicación. */
+const HOME_RECOMMENDATION_PREFS = { openNow: true } as const;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -34,6 +38,14 @@ export default function HomeScreen() {
 
   const { status, recommended } = usePlacesQuery();
   const directions = useDirections();
+  // Recomendaciones deterministas (motor V5.0): superficie aditiva, no altera
+  // la búsqueda existente. Se ejecuta una vez por ubicación.
+  const recommendations = useRecommendations({
+    intent: 'food',
+    origin: location.coords,
+    preferences: HOME_RECOMMENDATION_PREFS,
+    maxResults: 5,
+  });
 
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
@@ -238,6 +250,14 @@ export default function HomeScreen() {
             />
           ) : null}
         </View>
+
+        {/* Recomendaciones inteligentes (V5.1) — motor determinista V5.0 */}
+        <RecommendationSection
+          status={recommendations.status}
+          models={recommendations.models}
+          onSelect={(placeId) => router.push(`/place/${placeId}`)}
+          hideWhenEmpty
+        />
 
         <AppButton
           label={t('home.explorePlaces')}
