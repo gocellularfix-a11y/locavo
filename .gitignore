@@ -59,6 +59,13 @@ denue-*-manifest.json
 public/citypack/
 citypack-staged/
 
+# OSM: la descarga masiva de Geofabrik (PBF nacional de México) es input
+# TEMPORAL de build; nunca se versiona. Solo el snapshot recortado de Culiacán
+# (data/osm/culiacan/) y su metadata son artefactos permanentes.
+data/osm/.source/
+mexico-latest.osm.pbf
+mexico-*.osm.pbf
+
 # local tooling state (not part of the project)
 .claude/
 .omc/

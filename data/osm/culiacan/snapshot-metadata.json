@@ -1,0 +1,56 @@
+{
+  "format": "locavo-osm-snapshot-metadata",
+  "schemaVersion": 1,
+  "pipelineVersion": 1,
+  "city": "Culiacán",
+  "country": "Mexico",
+  "provider": "Geofabrik",
+  "upstreamDataset": "OpenStreetMap",
+  "sourceUrl": "https://download.geofabrik.de/north-america/mexico-latest.osm.pbf",
+  "sourceResolvedUrl": "https://download.geofabrik.de/north-america/mexico-260721.osm.pbf",
+  "sourceFileName": "mexico-260721.osm.pbf",
+  "sourceSha256": "1f571f99c6b24ffcb4b4feb034a9983969fde693d63ef698e5a327fdfbfe962b",
+  "sourceBytes": 636016404,
+  "sourceLastModifiedUtc": "2026-07-21T22:50:16Z",
+  "downloadedAtUtc": "2026-07-22T00:49:01Z",
+  "snapshotPath": "data/osm/culiacan/culiacan-osm-pilot.osm.pbf",
+  "snapshotSha256": "3b7905486d3b504951aa204a8692930ef5ce6a3eebc8b468e2e596febf0d3ed7",
+  "snapshotBytes": 3334324,
+  "snapshotBuiltAtUtc": "2026-07-22T01:04:35Z",
+  "bounds": {
+    "south": 24.41736487206252,
+    "west": -107.58789548672509,
+    "north": 24.91670886793748,
+    "east": -107.21666321327491,
+    "source": "public/citypack/manifest.json GeoBounds expanded by a 250 m per-axis margin"
+  },
+  "canonicalCityPackBounds": {
+    "minLat": 24.41961065,
+    "maxLat": 24.91446309,
+    "minLng": -107.5854242,
+    "maxLng": -107.2191345,
+    "source": "public/citypack/manifest.json"
+  },
+  "marginMeters": 250,
+  "latMarginDeg": 0.0022457779374775422,
+  "lngMarginDeg": 0.0024712867250824898,
+  "boundsDerivation": "Canonical City Pack GeoBounds read from public/citypack/manifest.json, expanded per axis by 250 m so OSM candidates within the approved 150 m matching radius of boundary DENUE places are retained.",
+  "extractor": {
+    "name": "pyosmium",
+    "version": "4.3.1",
+    "library": "libosmium (bundled with pyosmium 4.3.1)",
+    "strategy": "in-bbox nodes + ways referencing a kept node + relations referencing a kept node/way, completed via osmium.BackReferenceWriter (reference-complete, equivalent to osmium-tool complete_ways)",
+    "command": "python scripts/osm/extract-culiacan-snapshot.py <mexico-source.osm.pbf> data/osm/culiacan/culiacan-osm-pilot.osm.pbf 24.41961065 24.91446309 -107.5854242 -107.2191345 250"
+  },
+  "content": {
+    "primaryCounts": { "nodes": 252576, "ways": 31255, "relations": 83 },
+    "totalCounts": { "nodes": 358564, "ways": 36066, "relations": 99 },
+    "referenceComplete": true,
+    "missingReferencedNodes": 0
+  },
+  "repositoryBaseline": "55a7d77ece455ddebf37a30650e2b30c1869da33",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "purpose": "Locavo V4F-0 Culiacán OSM enrichment pilot"
+}
