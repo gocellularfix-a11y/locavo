@@ -169,6 +169,25 @@ export const es = {
   'rec.empty.title': 'Sin recomendaciones por ahora',
   'rec.empty.body': 'Amplía el radio de búsqueda o prueba otra categoría.',
 
+  // Contexto: Sugerencias de hoy (V5.2)
+  'today.section.title': 'Sugerencias de hoy',
+  'ctx.reason.breakfast': 'Perfecto para desayunar',
+  'ctx.reason.lunch': 'Ideal para comer',
+  'ctx.reason.dinner': 'Buena opción para cenar',
+  'ctx.reason.evening': 'Excelente opción para la noche',
+  'ctx.reason.lateNight': 'Abierto a esta hora',
+  'ctx.reason.morningFavorite': 'Favorito de la mañana',
+  'ctx.reason.weekendPick': 'Elección de fin de semana',
+  'ctx.reason.familyTime': 'Buen momento en familia',
+  'ctx.reason.goodTimeOfDay': 'Ideal para este momento del día',
+  'ctx.badge.breakfast': 'Desayuno',
+  'ctx.badge.lunch': 'Comida',
+  'ctx.badge.dinner': 'Cena',
+  'ctx.badge.openLate': 'Abierto tarde',
+  'ctx.badge.weekendPick': 'Fin de semana',
+  'ctx.badge.morningFavorite': 'Mañanas',
+  'ctx.badge.familyTime': 'En familia',
+
   // Detalle del lugar
   'place.directions': 'Cómo llegar',
   'place.directionsHint': 'Abre Google Maps con la ruta al lugar',

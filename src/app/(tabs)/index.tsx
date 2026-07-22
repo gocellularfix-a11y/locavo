@@ -13,7 +13,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
-import { RecommendationSection, useRecommendations } from '../../features/recommendations';
+import { TodaySection, useToday } from '../../features/today';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
@@ -23,9 +23,6 @@ import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
-
-/** Preferencias estables → el motor V5.0 se ejecuta una vez por ubicación. */
-const HOME_RECOMMENDATION_PREFS = { openNow: true } as const;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -38,14 +35,9 @@ export default function HomeScreen() {
 
   const { status, recommended } = usePlacesQuery();
   const directions = useDirections();
-  // Recomendaciones deterministas (motor V5.0): superficie aditiva, no altera
-  // la búsqueda existente. Se ejecuta una vez por ubicación.
-  const recommendations = useRecommendations({
-    intent: 'food',
-    origin: location.coords,
-    preferences: HOME_RECOMMENDATION_PREFS,
-    maxResults: 5,
-  });
+  // Sugerencias de hoy (V5.2): recomendaciones V5.1 reordenadas por contexto.
+  // Contexto y motor se ejecutan una vez; no altera la búsqueda existente.
+  const today = useToday({ origin: location.coords });
 
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
@@ -251,10 +243,10 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        {/* Recomendaciones inteligentes (V5.1) — motor determinista V5.0 */}
-        <RecommendationSection
-          status={recommendations.status}
-          models={recommendations.models}
+        {/* Sugerencias de hoy (V5.2) — contexto determinista sobre V5.1/V5.0 */}
+        <TodaySection
+          status={today.status}
+          models={today.models}
           onSelect={(placeId) => router.push(`/place/${placeId}`)}
           hideWhenEmpty
         />
