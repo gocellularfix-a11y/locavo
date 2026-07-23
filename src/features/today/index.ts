@@ -24,3 +24,9 @@ export {
 } from './intentToday';
 export { IntentTodaySection, type IntentTodaySectionProps } from './IntentTodaySection';
 export { IntentBar, type IntentBarProps } from './IntentBar';
+export {
+  decisionRoleLabelKey,
+  decisionReasonLabelKey,
+  decisionTradeoffLabelKey,
+} from './decisionLabels';
+export { DecisionSection, type DecisionSectionProps } from './DecisionSection';

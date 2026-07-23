@@ -343,3 +343,91 @@ existing `O(n log n)`.
 V5.0 quality/confidence, V5.2 context, V5.3 retrieval, and V5.4 preferences
 remain separate and unchanged; intent is strictly an additional, bounded,
 explainable layer.
+
+## 15. Decision Experience (V5.6)
+
+**Ranking vs. decision.** Ranking (V5.0–V5.5) answers "which candidate scored
+highest?" — it produces `finalScore = contextualScore × preferenceMultiplier ×
+intentMultiplier` and orders the population. Decision selection answers a
+different question: "which meaningfully different options should the user
+compare?" V5.6 **consumes** the ranked models; it never re-ranks.
+
+**Dependency direction.** `src/decision` is a pure domain layer with no React
+and no `features/` imports. It reads a structural supertype `RankedDecisionModel`
+(which `IntentTodayCardModel` satisfies) plus a `placesById` map. It does **not**
+retrieve places, evaluate V5.0, apply context/preference/intent multipliers,
+parse text, or touch persistence. Flow: `buildIntentTodayModels(…)` →
+`buildDecisionSet(…)` → `DecisionSection`.
+
+**Comparison snapshot.** `buildDecisionSnapshots` normalizes each ranked model
+to `DecisionCandidateSnapshot` using only already-evaluated values: `finalScore`,
+`sourceRank`, `distanceKm`, `recommendationConfidence` (the canonical
+evidence-quality signal — no new confidence model), `openState`, `category`, and
+structured `accessible`/`familyFriendly` from the place record. `intentStrength`
+= count of distinct `intent.reason.*` keys already merged; `preferenceStrength` =
+badge weight (favorite 200 ≫ match 100 ≫ 0) plus distinct `pref.reason.*` count.
+No prior formula is recomputed.
+
+**Roles.** Implemented: `BEST_MATCH`, `CLOSEST`, `MOST_RELIABLE`,
+`BEST_INTENT_FIT`, `BEST_PREFERENCE_FIT`, `OPEN_NOW`, `ACCESSIBLE`,
+`FAMILY_PICK`, `ALTERNATIVE`. `BUDGET_FRIENDLY` is **not** implemented — price is
+not part of the ranking evidence and inventing a budget role would fabricate
+signal. `BEST_MATCH` is always the top ranked eligible candidate (primary).
+
+**Meaningful differentiation (exact rules).** Business-name difference never
+counts. Distance: alternative is CLOSEST only when `primary.distanceKm −
+candidate.distanceKm ≥ 0.5 km`. Confidence: MOST_RELIABLE only when
+`confidenceRank(candidate) > confidenceRank(primary)` (≥ one canonical level).
+Intent: BEST_INTENT_FIT only when `candidate.intentStrength >
+primary.intentStrength` and an intent is active. Preference: BEST_PREFERENCE_FIT
+only when `candidate.preferenceStrength > primary.preferenceStrength`. Category:
+ALTERNATIVE only when the category differs **and** is compatible with the active
+intent scope (any category when no intent), and `finalScore ≥ 0.6 × primary`.
+Open/accessible/family roles require explicit positive evidence and only add
+value when the primary lacks it.
+
+**Role priority.** `BEST_MATCH` (primary), then alternatives in the fixed order
+CLOSEST → MOST_RELIABLE → BEST_INTENT_FIT → BEST_PREFERENCE_FIT → OPEN_NOW →
+ACCESSIBLE → FAMILY_PICK → ALTERNATIVE. Each place fills at most one visible
+role; each role appears at most once; deterministic tie-breaks by `sourceRank`
+then `placeId`. **Maximum output: one primary + up to two alternatives.** Fewer
+options are returned when differentiation is insufficient — never filler.
+
+**Tradeoffs.** Emitted in canonical order only when a canonical datum supports
+them and the difference is non-negligible: `TRADEOFF_FARTHER` (≥ 0.5 km),
+`TRADEOFF_LOWER_CONFIDENCE`, `TRADEOFF_WEAKER_INTENT_MATCH`,
+`TRADEOFF_WEAKER_PREFERENCE_MATCH`, `TRADEOFF_LIMITED_EVIDENCE` (confidence
+`unknown`), `TRADEOFF_DIFFERENT_CATEGORY`. `TRADEOFF_CLOSED_SOON` is intentionally
+absent: there is no canonical "closing soon" signal.
+
+**Unknown-evidence semantics.** `distanceKm === null`, `openState === 'unknown'`,
+and `accessible`/`familyFriendly === undefined` are preserved as unknown and
+never treated as `false`; evidence-gated roles are never assigned from unknowns
+(counted under `missingEvidenceRejected`).
+
+**No-intent / ambiguity.** With no active intent, V5.6 still builds a general
+decision set from personalized Today: `BEST_MATCH` reflects V5.0–V5.4 order and
+alternatives may be closest/most-reliable/preference-fit; clearing intent
+recomputes deterministically. Unknown or ambiguous intent (no resolved snapshot)
+never creates an intent-specific role.
+
+**Diagnostics.** `DecisionSelectionDiagnostics` (received, eligible, selected,
+duplicatePlacesRejected, duplicateRolesRejected,
+insufficientDifferentiationRejected, missingEvidenceRejected,
+roleCandidatesEvaluated) are local, never shown in the consumer UI, never
+persisted or transmitted, and arithmetic-consistent (`selected = (primary?1:0) +
+alternatives`).
+
+**Complexity.** Snapshot construction `O(n)`; role selection `O(n × r)` with `r`
+a small fixed role count; deduplication `O(n)`; bounded constant output. The
+decision set is built once per ranked-model change (a `useMemo` in `useToday`),
+never per rendered card; no repository access, no re-execution of V5.0–V5.5, no
+persistence, no network, no randomness.
+
+**Privacy.** No accounts, network, analytics, telemetry, persistence, query or
+place-history logging, or background tracking. Compare is pure local UI state and
+records no preference signal; card impressions and role assignments are never
+recorded.
+
+V5.0–V5.5 remain separate and unchanged; decision selection is strictly an
+additional, bounded, explainable layer on top of the ranked models.

@@ -13,7 +13,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
-import { IntentBar, IntentTodaySection, useToday } from '../../features/today';
+import { DecisionSection, IntentBar, useToday } from '../../features/today';
 import type { IntentSnapshot } from '../../intent';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
@@ -248,9 +248,11 @@ export default function HomeScreen() {
         {/* Intención (V5.5): chips por contexto + entrada de texto controlada */}
         <IntentBar onIntentChange={setIntent} />
 
-        {/* Sugerencias de hoy — contexto (V5.2) + preferencias (V5.4) + intención (V5.5) */}
-        <IntentTodaySection
+        {/* Decisión (V5.6) — primario + alternativas sobre contexto (V5.2) +
+            preferencias (V5.4) + intención (V5.5) */}
+        <DecisionSection
           status={today.status}
+          decision={today.decision}
           models={today.models}
           onSelect={(placeId) => router.push(`/place/${placeId}`)}
           hideWhenEmpty

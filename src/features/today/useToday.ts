@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { evaluateContext } from '../../context';
+import { buildDecisionSet, type DecisionSet } from '../../decision';
 import type { Coordinates } from '../../domain/place';
 import type { LocavoPlace } from '../../domain/places/LocavoPlace';
 import { intentCategoryScope, type IntentSnapshot } from '../../intent';
@@ -34,6 +35,8 @@ export interface UseTodayInput {
 export interface UseTodayResult {
   status: RecommendationStatus;
   models: readonly IntentTodayCardModel[];
+  /** Set de decisión (V5.6): primario + hasta dos alternativas. */
+  decision: DecisionSet | null;
 }
 
 export function useToday(input: UseTodayInput): UseTodayResult {
@@ -76,7 +79,8 @@ export function useToday(input: UseTodayInput): UseTodayResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, scopeKey]);
 
-  const models = useMemo(() => {
+  // Ranking (V5.0–V5.5): una sola construcción por cambio de entradas.
+  const built = useMemo(() => {
     if (!candidates) {
       return null;
     }
@@ -85,9 +89,19 @@ export function useToday(input: UseTodayInput): UseTodayResult {
       candidates,
     );
     const placesById = new Map(candidates.map((p) => [p.id, p]));
-    return buildIntentTodayModels(baseModels, placesById, context, preferences, intent, TODAY_LIMIT).models;
+    const models = buildIntentTodayModels(baseModels, placesById, context, preferences, intent, TODAY_LIMIT).models;
+    return { models, placesById };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidates, context, preferences, intent, lat, lng, now]);
 
-  return { status: candidates ? 'ready' : 'loading', models: models ?? [] };
+  // Decisión (V5.6): se construye UNA vez por cambio de los modelos rankeados.
+  // No recupera lugares, no evalúa V5.0/contexto/preferencias, no analiza texto.
+  const decision = useMemo(() => {
+    if (!built) {
+      return null;
+    }
+    return buildDecisionSet({ rankedModels: built.models, placesById: built.placesById, activeIntent: intent });
+  }, [built, intent]);
+
+  return { status: candidates ? 'ready' : 'loading', models: built?.models ?? [], decision };
 }
