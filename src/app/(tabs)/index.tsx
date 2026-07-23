@@ -13,7 +13,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
-import { TodaySection, useToday } from '../../features/today';
+import { PersonalizedTodaySection, useToday } from '../../features/today';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
@@ -243,8 +243,8 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        {/* Sugerencias de hoy (V5.2) — contexto determinista sobre V5.1/V5.0 */}
-        <TodaySection
+        {/* Sugerencias de hoy (V5.4) — contexto + preferencias privadas */}
+        <PersonalizedTodaySection
           status={today.status}
           models={today.models}
           onSelect={(placeId) => router.push(`/place/${placeId}`)}

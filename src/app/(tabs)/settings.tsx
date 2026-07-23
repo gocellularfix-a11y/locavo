@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppText } from '../../components/AppText';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { PreferencesSettings } from '../../preferences/PreferencesSettings';
 import { useI18n } from '../../i18n/I18nContext';
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
 import { MANUAL_LOCATIONS } from '../../services/location';
@@ -143,6 +144,8 @@ export default function SettingsScreen() {
             ))}
           </View>
         </Section>
+
+        <PreferencesSettings />
 
         <Section title={t('settings.privacy')}>
           <AppText variant="body" tone="secondary">

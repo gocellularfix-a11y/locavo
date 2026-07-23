@@ -21,6 +21,7 @@ import {
   verificationTextLocalized,
 } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
+import { usePreferences } from '../../preferences/PreferenceContext';
 import { useDirections } from '../../hooks/useDirections';
 import { analytics, placeSearchService } from '../../services/container';
 import { scorePlace } from '../../services/places/PlaceRankingService';
@@ -67,6 +68,7 @@ export default function PlaceDetailScreen() {
   const { t, locale } = useI18n();
   const location = useLocationState();
   const directions = useDirections();
+  const { profile, dispatch } = usePreferences();
   const { id } = useLocalSearchParams<{ id: string }>();
   const validId = typeof id === 'string' && id.length > 0 ? id : null;
   const [state, setState] = useState<LoadState>({ status: 'loading' });
@@ -107,6 +109,8 @@ export default function PlaceDetailScreen() {
         placeId: state.place.id,
         category: state.place.category,
       });
+      // Interacción de alta intención (V5.4): abrir detalles del lugar.
+      dispatch({ type: 'OPEN_PLACE_DETAILS', placeId: state.place.id });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status === 'ready' ? state.place.id : null]);
@@ -135,6 +139,9 @@ export default function PlaceDetailScreen() {
   } else if (scored) {
     const { place } = state;
     const website = place.contact?.website;
+    const signal = profile.placeSignals[place.id];
+    const isFavorite = signal?.favorite === true;
+    const isHidden = signal?.hidden === true;
     body = (
       <View style={{ gap: spacing.xl }}>
         <View style={{ gap: spacing.sm }}>
@@ -142,6 +149,58 @@ export default function PlaceDetailScreen() {
             {place.name}
           </AppText>
           <CategoryBadge category={place.category} />
+          <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+            <Pressable
+              onPress={() =>
+                dispatch({ type: isFavorite ? 'UNFAVORITE_PLACE' : 'FAVORITE_PLACE', placeId: place.id })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={t(isFavorite ? 'pref.action.unfavorite' : 'pref.action.favorite')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                borderWidth: 1,
+                borderColor: isFavorite ? colors.brand : colors.border,
+                borderRadius: 999,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.xs,
+              }}
+            >
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={16}
+                color={isFavorite ? colors.brand : colors.textSecondary}
+              />
+              <AppText variant="caption" color={isFavorite ? colors.brand : colors.textSecondary}>
+                {t(isFavorite ? 'pref.action.unfavorite' : 'pref.action.favorite')}
+              </AppText>
+            </Pressable>
+            <Pressable
+              onPress={() => dispatch({ type: isHidden ? 'UNHIDE_PLACE' : 'HIDE_PLACE', placeId: place.id })}
+              accessibilityRole="button"
+              accessibilityLabel={t(isHidden ? 'pref.action.unhide' : 'pref.action.hide')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 999,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.xs,
+              }}
+            >
+              <Ionicons
+                name={isHidden ? 'eye-outline' : 'eye-off-outline'}
+                size={16}
+                color={colors.textSecondary}
+              />
+              <AppText variant="caption" tone="secondary">
+                {t(isHidden ? 'pref.action.unhide' : 'pref.action.hide')}
+              </AppText>
+            </Pressable>
+          </View>
         </View>
 
         <View
@@ -162,6 +221,7 @@ export default function PlaceDetailScreen() {
           label={t('place.directions')}
           icon="navigate"
           onPress={() => {
+            dispatch({ type: 'REQUEST_DIRECTIONS', placeId: place.id });
             directions.navigateTo(place);
           }}
           accessibilityHint={t('place.directionsHint')}

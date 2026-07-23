@@ -221,3 +221,62 @@ pool (`maxResults = pool size`, so nothing is truncated by hash), then context
 once, then `buildTodayModels` once. A strong nearby candidate can no longer be
 excluded by hash order before ranking. The standalone **Surprise** feature
 (`selectSurprisePlace`) is unchanged and still used elsewhere.
+
+## 13. Private Preferences (V5.4)
+
+A private, local-only preference layer (`src/preferences/`) personalizes Today
+**without** accounts, remote profiles, analytics, ML, or network. Dependency
+direction: Local Store → normalized Snapshot → bounded Adjustment → applied
+after V5.0 quality + V5.2 context → deterministic order → UI. The layer never
+retrieves candidates, replaces V5.0 scoring, modifies V5.0 confidence, modifies
+V5.2 context multipliers, generates prose, or depends on React/UI (the store's
+storage adapter and the React context are the only IO seams).
+
+**Model & persistence.** `UserPreferenceProfile` (schemaVersion 1) stores only
+canonical ids + bounded signals — never whole place records. `normalizeProfile`
+recovers safely from malformed/unknown-schema data (→ canonical defaults),
+dedupes and sorts categories, clamps distance to `[0.1, 50] km`, caps interaction
+counters (`DETAIL_OPEN_CAP`/`DIRECTIONS_CAP = 5`), drops malformed/empty signals,
+and bounds persisted places to `MAX_PLACE_SIGNALS = 500`. The store
+(`AsyncStorage`, injectable adapter) is local-only with atomic key replacement,
+safe failure, and no remote fallback. Actions mutate only through a **pure
+reducer** (`reducePreference`); timestamps are passed in, never read from the
+clock inside pure functions.
+
+**Explicit vs interaction-derived signals.** Explicit: favorite/hidden place,
+favorite/reduced category, distance, and open-now/accessibility/family/parking
+preferences. Interaction-derived (only high-intent local actions): opening place
+details and requesting directions — never impressions, scrolling, or view time.
+
+**Adjustment model (multiplicative, bounded).** `evaluatePreferenceAdjustment`
+returns a multiplier (never combined with an additive term — `additiveBoost` is
+always 0) applied as `personalizedScore = contextualScore × multiplier`, clamped
+to `[0.5, 1.6]`. Favorite place ×1.5; favorite category ×1.2; reduced category
+×0.7; supporting matches ×1.05 each; interaction signals are **weaker**
+(directions ×1.05, detail-open ×1.03) and count presence once (capped, never
+unbounded). Hidden places are **excluded** (`PREF_PLACE_HIDDEN`). The V5.0 base
+score and confidence are preserved for display/diagnostics; tie-break stays
+canonical `placeId`.
+
+**Explanations** are structured `PreferenceReasonCode`s mapped to typed i18n keys
+in the presentation layer (all 7 locales). **Diagnostics**
+(`PreferenceEvaluationDiagnostics`) are deterministic, not shown in the UI, no
+telemetry.
+
+**Stability/decay.** No time decay (no canonical decay utility exists):
+explicit/favorite/hidden state does not decay, counters stay capped; stored
+timestamps do not affect scoring in V5.4.
+
+**Privacy.** Everything stays on the device (surfaced as *"Preferences stay on
+this device."*). No accounts, network, analytics, tracking of impressions or
+scrolling. The user can review, favorite/unfavorite, hide/unhide, and reset all
+preferences (confirmation required; unrelated settings and City-Pack data are not
+touched).
+
+**Complexity:** normalization `O(p)`, per-place adjustment `O(1)` (normalized
+sets/maps), full personalization pass `O(n)`, ordering preserves the existing
+bounded `O(n log n)` stage. Today loads preferences once and evaluates once.
+
+V5.0 quality/confidence, V5.2 context multipliers, and V5.3 retrieval remain
+separate and unchanged; preferences are strictly an additional, bounded,
+explainable layer.

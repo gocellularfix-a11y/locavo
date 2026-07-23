@@ -15,6 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { APP_CONFIG } from '../config/appConfig';
 import { I18nProvider } from '../i18n/I18nContext';
+import { PreferenceProvider } from '../preferences/PreferenceContext';
 import { LocationProvider } from '../state/LocationContext';
 import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
@@ -69,7 +70,9 @@ export default function RootLayout() {
       <I18nProvider>
         <AppThemeProvider>
           <LocationProvider>
-            <RootNavigator />
+            <PreferenceProvider>
+              <RootNavigator />
+            </PreferenceProvider>
           </LocationProvider>
         </AppThemeProvider>
       </I18nProvider>

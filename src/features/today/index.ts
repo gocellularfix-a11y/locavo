@@ -5,3 +5,12 @@ export { useToday, type UseTodayInput, type UseTodayResult } from './useToday';
 export { TodaySection, type TodaySectionProps } from './TodaySection';
 export { TodayCard } from './TodayCard';
 export { ContextBadges } from './ContextBadges';
+export {
+  buildPersonalizedTodayModels,
+  preferenceReasonLabelKey,
+  type PersonalizedTodayCardModel,
+  type PersonalizedTodayResult,
+  type PreferenceEvaluationDiagnostics,
+} from './personalizedToday';
+export { PersonalizedTodaySection, type PersonalizedTodaySectionProps } from './PersonalizedTodaySection';
+export { PersonalizedTodayCard } from './PersonalizedTodayCard';
