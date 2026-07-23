@@ -13,7 +13,8 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
 import { SmartHero } from '../../features/home/SmartHero';
-import { PersonalizedTodaySection, useToday } from '../../features/today';
+import { IntentBar, IntentTodaySection, useToday } from '../../features/today';
+import type { IntentSnapshot } from '../../intent';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
@@ -35,9 +36,10 @@ export default function HomeScreen() {
 
   const { status, recommended } = usePlacesQuery();
   const directions = useDirections();
-  // Sugerencias de hoy (V5.2): recomendaciones V5.1 reordenadas por contexto.
-  // Contexto y motor se ejecutan una vez; no altera la búsqueda existente.
-  const today = useToday({ origin: location.coords });
+  // Intención (V5.5): estado de sesión; limpiarla restaura Today normal.
+  const [intent, setIntent] = useState<IntentSnapshot | null>(null);
+  // Sugerencias de hoy: contexto (V5.2) + preferencias (V5.4) + intención (V5.5).
+  const today = useToday({ origin: location.coords, intent });
 
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
@@ -243,8 +245,11 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        {/* Sugerencias de hoy (V5.4) — contexto + preferencias privadas */}
-        <PersonalizedTodaySection
+        {/* Intención (V5.5): chips por contexto + entrada de texto controlada */}
+        <IntentBar onIntentChange={setIntent} />
+
+        {/* Sugerencias de hoy — contexto (V5.2) + preferencias (V5.4) + intención (V5.5) */}
+        <IntentTodaySection
           status={today.status}
           models={today.models}
           onSelect={(placeId) => router.push(`/place/${placeId}`)}

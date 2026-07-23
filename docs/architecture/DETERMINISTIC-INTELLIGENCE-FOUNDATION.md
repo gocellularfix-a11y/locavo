@@ -280,3 +280,66 @@ bounded `O(n log n)` stage. Today loads preferences once and evaluates once.
 V5.0 quality/confidence, V5.2 context multipliers, and V5.3 retrieval remain
 separate and unchanged; preferences are strictly an additional, bounded,
 explainable layer.
+
+## 14. Intent Intelligence (V5.5)
+
+A deterministic Intent Engine (`src/intent/`) converts a user's immediate goal
+into structured recommendation constraints and boosts — **no** LLM, NLG, ML,
+embeddings, or remote classification. Dependency direction: user input → parser
+→ resolver → snapshot → candidate scope / intent adjustment → applied after V5.0
+quality + V5.2 context + V5.4 preferences → final order → UI. The engine never
+loads places, replaces retrieval, modifies V5.0/V5.2/V5.4 formulas, persists
+search text, generates prose, or depends on React/network.
+
+**Parser vs resolver (separate responsibilities).** `parseIntentText(input,
+locale)` normalizes (reusing `normalizeQuery`; input bounded to 120 chars / 24
+tokens, ReDoS-safe), then matches curated catalog phrases longest-first with
+overlap prevention — token-subsequence for Latin scripts, catalog-substring for
+Chinese (whitespace tokenization is not assumed for zh). It returns structured
+matches, never recommendations, and never throws. `resolveIntent(parse,
+explicitSelection?)` picks one primary intent by deterministic priority, retains
+compatible secondaries, flags conflicting primaries as `AMBIGUOUS`, prefers an
+explicit UI chip over parsed text, and returns `null` for UNKNOWN.
+
+**Catalog & lexicon.** `IntentDefinition` per intent (category scope, supporting
+categories, evidence preferences, context affinity, priority) — canonical
+categories only, never businesses. Curated per-intent phrase lexicons cover all
+7 locales (every intent has ≥1 phrase per locale; no conflicting phrases).
+
+**Confidence** (`EXACT | STRONG | PARTIAL | AMBIGUOUS | UNKNOWN`) is a separate
+enum — never a percentage — distinct from recommendation confidence, score,
+data quality, and preference strength.
+
+**Candidate scope.** Only EXACT/STRONG intents with a reliable scope (≤4
+categories) narrow retrieval by passing explicit `categories` into the **same**
+V5.3 `retrieveRecommendationCandidates` (no retrieval logic is duplicated).
+Partial/ambiguous/unknown intents use the canonical broad retrieval and degrade
+safely.
+
+**Adjustment (bounded multiplicative).** `finalScore = contextualScore ×
+preferenceMultiplier × intentMultiplier`, clamped to `[0.5, 1.6]`. In-scope
+category ×1.3; out-of-scope ×0.7 (down-rank, never hard-exclude); modifier
+matches (open-now/open-late/nearby/accessible/family) ×1.1; closed under an
+open-now/open-late intent ×0.6 — strong intent makes the task relevant but does
+not let clearly unsuitable or closed places win. Base score, confidence,
+contextual score, and preference multiplier are all preserved; tie-break stays
+canonical `placeId`. Reason codes map to typed i18n keys (7 locales); `null`
+intent → identical personalized order (clearing intent restores normal Today).
+
+**Ambiguity/unknown.** Ambiguous input surfaces a small deterministic choice;
+unknown input shows a localized "not recognized" message and keeps normal
+suggestions — never an invented intent.
+
+**Privacy & state.** Session-local only: no raw intent text, prior searches,
+unresolved tokens, histories, or timestamps are persisted; the active resolved
+intent lives in React state while the screen is open and clears on restart.
+
+**Runtime.** Per submitted intent: parse once, resolve once, retrieve once,
+V5.0 once, context once, preferences once, intent once. **Complexity:**
+normalization `O(t)`, phrase matching bounded by catalog size, resolution
+`O(m log m)`, per-candidate intent `O(1)`, full pass `O(n)`, ordering the
+existing `O(n log n)`.
+
+V5.0 quality/confidence, V5.2 context, V5.3 retrieval, and V5.4 preferences
+remain separate and unchanged; intent is strictly an additional, bounded,
+explainable layer.
