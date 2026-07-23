@@ -543,3 +543,91 @@ The independent architecture audit's minor findings are closed:
 Frozen engines remain untouched in V5.7.1; the only changes are within Safe
 Decision Actions (`src/actions`, `src/services/placeActionExecutor.ts`,
 `src/hooks/useDirections.ts`, `src/app/place/[id].tsx`, and action tests).
+
+## 17. Rich Place Intelligence Foundation (V5.8)
+
+**Single question.** *What kind of experience does this place offer?* V5.8 does
+NOT rank, recommend, explain a recommendation, compare places, decide what to do
+now, or produce any UI text. It converts existing structured place data into a
+structured, explainable description of the experience.
+
+**Input sources (only what already exists on `LocavoPlace`).** Canonical category
+and secondary categories; explicit amenities (`features`: wheelchairAccessible,
+familyFriendly, parking, outdoorSeating, reservations, delivery); price level;
+opening hours; a narrow place-name lexicon; presence of contact fields. No
+external APIs, network, LLM, embeddings, OCR, generated text, telemetry, random
+values, or persisted cache. Absent data is never treated as negative evidence.
+
+**Output contract.** `buildPlaceIntelligence(place: LocavoPlace):
+PlaceIntelligenceReport` (`src/intelligence/place`), pure and renderer-agnostic.
+The report holds ordered, deduplicated `IntelligenceAttribute<TCode>` lists
+(personalities, visitExperiences, audiences, bestTimes, accessibility,
+experienceTags, specialties), single-or-null noiseLevel and visitDuration, an
+overall `evidenceQuality`, and `schemaVersion` (`5.8.0`). Every emitted attribute
+carries structured evidence and a confidence; the domain returns codes only —
+never prose.
+
+**Catalogs.** Closed, typed unions with a canonical priority array each:
+PlacePersonality (12), VisitExperience (11), PlaceAudience (10), BestVisitTime
+(11), NoiseLevel (4), VisitDuration (6), AccessibilityTrait (6), ExperienceTag
+(12), PlaceSpecialty (15, scoped to the Culiacán taxonomy). A catalog entry may
+exist without being emitted. Unknown specialties are omitted, never guessed.
+
+**Evidence model.** `PlaceIntelligenceEvidence { source, code, value? }` with
+closed source/code enums. `value` is always a safe canonical primitive (a
+category id, price number, time-band code, or lexicon token) — never the raw
+business name or free text. Evidence is deduplicated and sorted by a canonical
+(source → code → value) order.
+
+**Confidence model** (from evidence strength, not popularity/quality/ranking):
+strength 3 = explicit structured attribute (feature/price); 2 = one strong
+derived signal (category affinity, hours-confirmed window); 1 = one conservative
+indirect signal (name lexicon). HIGH = strength-3, or strength-2 with ≥2
+independent supporting evidences; MEDIUM = one strength-2, or ≥2 strength-1;
+LOW = a single strength-1. Attributes too weak to justify LOW are not emitted.
+
+**Evidence-quality model.** Report-level coverage of structured fields (hours +1,
+amenities +1, price +1, name-lexicon +0.5, contact +0.5): ≥2.5 HIGH, ≥1.5 MEDIUM,
+≥0.5 LOW, else INSUFFICIENT. It measures data coverage, not business quality; a
+sparse DENUE place legitimately yields INSUFFICIENT and a mostly-empty report.
+
+**Deterministic ordering.** Same normalized input → deeply equal output. No
+current time, locale ordering, randomness, or object-key-enumeration dependence.
+Every catalog defines an explicit priority; attributes and evidence are sorted by
+those frozen orders and deduplicated.
+
+**Conservative inference (documented, tested).** Category may imply broad,
+defensible experiences/durations (restaurant → FULL_MEAL, MIN_30_TO_60; pharmacy
+→ ERRAND/QUICK_STOP/UNDER_15_MIN) but never ROMANTIC, FAMILY_FRIENDLY,
+LOCAL_FAVORITE, QUIET, GOOD_FOR_DATES, SCENIC, HIDDEN_GEM, or FAST_SERVICE without
+explicit evidence. NoiseLevel is emitted only for `nightlife` → LOUD; otherwise
+null.
+
+**Hours integration.** Reuses the canonical `parseTimeToMinutes` (no second hours
+parser, no redefinition of open/closed, no current time). Best-time windows are
+broad, experience-oriented, and only emitted when the place is actually open in
+that window (overnight-correct); with missing hours, only category-typical bands
+at MEDIUM; WEEKDAY/WEEKEND only from hours. A closed window is never a best time.
+
+**Accessibility unknown-state.** Accessibility traits are emitted only from
+explicit `features` set to `true`. Absent data → UNKNOWN (omitted), never
+inferred as accessible or inaccessible; explicit `false` is also omitted (never
+surfaced). Category, address, and popularity never imply wheelchair access.
+
+**Architectural boundaries.** `src/intelligence/place` is a pure domain: no React,
+React Native, `Linking`, network, storage, analytics, timers, or randomness
+(enforced by a source-scan test). No business-specific hardcoding (no `place.id
+=== …`); rules generalize across businesses and future cities (Santa Barbara
+would extend the lexicon as data, not change engine code).
+
+**Frozen-engine confirmation.** Search, Retrieval, Intent, Context, Ranking,
+Recommendation Candidates, Recommendations, Decision, Today, Surprise,
+Preferences, Safe Decision Actions, navigation, City Pack loading, identity,
+repository, and category classification are untouched. No UI was added; no
+translation keys were needed. Santa Barbara was not started.
+
+**Honest limitations.** For DENUE-sourced Culiacán places (category/name/contact
+only), reports are legitimately sparse and frequently INSUFFICIENT; richer output
+appears only where hours/amenities/price exist (e.g. enriched or seed data). The
+engine describes only what the City Pack actually contains — it asserts no facts
+beyond the structured data.
