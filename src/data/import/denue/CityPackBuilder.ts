@@ -5,6 +5,7 @@ import type {
 } from './DenueCandidateMapper';
 import { locavoPlaceIdFromDenue } from '../../../domain/places/locavoPlaceId';
 import type { LocavoCategory, PlaceAddress, PlaceContact } from '../../../domain/places/LocavoPlace';
+import { PROVIDER_DENUE, type ProviderId } from '../../pipeline/providerId';
 
 /**
  * Constructor del "city pack" canónico de Culiacán (V4C).
@@ -21,7 +22,8 @@ import type { LocavoCategory, PlaceAddress, PlaceContact } from '../../../domain
  */
 
 export interface CityPackSourceRef {
-  provider: 'denue';
+  /** Id de proveedor del REGISTRO (abierto). Culiacán sigue usando `PROVIDER_DENUE`. */
+  provider: ProviderId;
   /** Id de establecimiento del proveedor (denue_id). */
   externalId: string;
   /** Clave Estadística Empresarial cuando existe. */
@@ -122,7 +124,7 @@ export interface CityPackBuildResult {
 
 function toPackPlace(candidate: DenueImportCandidate, meta: CityPackMeta): CityPackPlace {
   const source: CityPackSourceRef = {
-    provider: 'denue',
+    provider: PROVIDER_DENUE,
     externalId: candidate.denueId,
     dataset: meta.dataset,
     edition: meta.sourceVersion,

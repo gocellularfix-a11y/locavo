@@ -1,28 +1,20 @@
 import type { CityPackPlace } from '../../import/denue/CityPackBuilder';
 import type {
   LocavoPlace,
+  PlaceSource,
   PlaceSourceRefs,
-  PlaceVerification,
 } from '../../../domain/places/LocavoPlace';
+import { providerRegistry } from '../../pipeline/providerRegistry';
 
 /**
  * Hidratación CityPackPlace (DTO canónico del pack) → LocavoPlace (modelo
- * de runtime). Neutral al proveedor: la verificación se deriva de la
- * procedencia declarada en sources[], nunca de lógica DENUE incrustada.
+ * de runtime). Neutral al proveedor: la verificación y las ranuras de
+ * `sourceRefs` se derivan del REGISTRO de proveedores (City Pipeline V1) según
+ * la procedencia declarada en sources[], nunca de lógica DENUE incrustada.
  *
  * No se inventa nada: sin horarios, sin precios, sin calificaciones. Las
  * marcas de tiempo derivan de la edición oficial del dato (deterministas).
  */
-
-const PROVIDER_VERIFICATION: Record<string, Pick<PlaceVerification, 'status' | 'confidence'>> = {
-  // Mismos valores que la importación V4B (fuente oficial → source_verified).
-  denue: { status: 'source_verified', confidence: 0.6 },
-};
-
-const DEFAULT_VERIFICATION: Pick<PlaceVerification, 'status' | 'confidence'> = {
-  status: 'unverified',
-  confidence: 0.3,
-};
 
 function editionTimestamp(edition: string): string {
   // La edición llega como fecha oficial (p. ej. 2026-07-01).
@@ -31,17 +23,21 @@ function editionTimestamp(edition: string): string {
 
 export function cityPackPlaceToLocavoPlace(place: CityPackPlace): LocavoPlace {
   const primary = place.sources[0];
-  const denue = place.sources.find((s) => s.provider === 'denue');
 
+  // Ranuras de referencia por proveedor desde el registro (primera fuente gana).
   const sourceRefs: PlaceSourceRefs = {};
-  if (denue) {
-    sourceRefs.denueId = denue.externalId;
-    if (denue.clee) {
-      sourceRefs.clee = denue.clee;
+  const refs = sourceRefs as Record<string, string>;
+  for (const source of place.sources) {
+    const slots = providerRegistry.sourceRefSlotsOf(source.provider);
+    if (slots.externalId && refs[slots.externalId] === undefined) {
+      refs[slots.externalId] = source.externalId;
+    }
+    if (slots.clee && source.clee && refs[slots.clee] === undefined) {
+      refs[slots.clee] = source.clee;
     }
   }
 
-  const verification = PROVIDER_VERIFICATION[primary?.provider ?? ''] ?? DEFAULT_VERIFICATION;
+  const verification = providerRegistry.verificationOf(primary?.provider);
   const timestamp = editionTimestamp(primary?.edition ?? '');
 
   const hydrated: LocavoPlace = {
@@ -59,7 +55,11 @@ export function cityPackPlaceToLocavoPlace(place: CityPackPlace): LocavoPlace {
       sourceDatasetUpdatedAt: timestamp,
     },
     provenance: place.sources.map((source) => ({
-      source: source.provider,
+      // `provider` es ProviderId (abierto); los proveedores registrados hoy
+      // (denue/openstreetmap) son valores válidos de PlaceSource. Migración:
+      // al añadir proveedores fuera de PlaceSource (Overture/GeoNames), ampliar
+      // `PlaceProvenanceEntry.source` a ProviderId (cambio de dominio aislado).
+      source: source.provider as PlaceSource,
       importedAt: editionTimestamp(source.edition),
       updatedAt: editionTimestamp(source.edition),
     })),
