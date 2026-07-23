@@ -631,3 +631,50 @@ only), reports are legitimately sparse and frequently INSUFFICIENT; richer outpu
 appears only where hours/amenities/price exist (e.g. enriched or seed data). The
 engine describes only what the City Pack actually contains — it asserts no facts
 beyond the structured data.
+
+### 17.1 Closure (V5.8.1)
+
+The independent adversarial audit's minor findings are closed (module-only changes):
+
+- **Runtime-frozen catalogs.** Every exported `*_ORDER` array is now
+  `Object.freeze`d (via a typed `freezeOrder` helper), not merely typed
+  `readonly`. Consumers cannot `push`/`splice`/index-assign shared ordering
+  state; internal evidence-strength/order tables are frozen too. Tested at
+  runtime (mutation attempts throw or no-op; the array and engine ordering stay
+  unchanged).
+- **BestVisitTime confidence calibration.** Best-time signals are now weak
+  (strength 1): **category + compatible known hours → MEDIUM** (hours prove
+  *available*, not *best*); **category-only (no hours) → LOW**; best-time is
+  never `HIGH` from category and/or hours compatibility, and duplicate intervals
+  do not elevate it. Closed windows remain excluded; overnight remains correct.
+- **No beer evening default.** `beer` has no category time-of-day window: without
+  compatible hours it emits no `EVENING` (and none is fabricated even with
+  evening hours). Beer retains its retail/errand experiences and may still show
+  WEEKDAY/WEEKEND from hours.
+- **Tightened evidence quality.** Coverage now counts only *usable* signals:
+  hours with ≥1 valid parseable interval (+1), ≥1 recognized feature explicitly
+  `true` (+1), price level present (+1), a bounded name-lexicon match (+0.5).
+  **Contact (phone/website) no longer counts** — it does not describe the
+  experience. Empty/`null`/closed/malformed hours and empty/all-`false` features
+  do not count. Thresholds (max 3.5): **≥2.5 HIGH · ≥1.5 MEDIUM · ≥0.5 LOW · else
+  INSUFFICIENT**. On the full 500-place Culiacán pack this yields 67.6%
+  INSUFFICIENT / 32.4% LOW / 0% MEDIUM / 0% HIGH — honestly sparse, not tuned up.
+- **Secondary categories.** V5.8 intentionally uses the **primary canonical
+  category only**. The unused `secondaryCategories` collection and the never-emitted
+  `CATEGORY_SECONDARY`/`SECONDARY_CATEGORY` evidence codes are removed (no dead
+  paths); secondary categories are not populated in the data model and using them
+  would risk unsupported claims.
+- **Bounded lexicon improvement.** Tokenization now treats punctuation and
+  hyphens as word boundaries (still exact-token, ReDoS-safe, accent-normalized),
+  and adds the explicit singular alias `taco`. No substring/stemming/fuzzy
+  matching; negative tests confirm `Barra/Europa/Posada/Hotelito/Marino/
+  Cafeteriax/Taconazo` never trigger `bar/ropa/asada/hotel/mar/cafe/taco`.
+
+> **`evidenceQuality` measures the structured input coverage available to V5.8.
+> It is NOT place quality, attribute confidence, recommendation confidence,
+> popularity, or ranking strength.** A LOW/INSUFFICIENT report simply means sparse
+> input; emitted attributes carry their own per-attribute confidence.
+
+V5.8.1 remains foundation-only: no UI, no translations, no version bump; frozen
+engines untouched; V5.9, the Culiacán Readiness Review, and Santa Barbara were
+not started.

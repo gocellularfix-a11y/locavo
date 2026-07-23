@@ -28,6 +28,9 @@ const catEv = (category: CategoryId): PlaceIntelligenceEvidence => ({ source: 'C
 const featEv = (code: PlaceIntelligenceEvidenceCode): PlaceIntelligenceEvidence => ({ source: 'FEATURE', code, value: true });
 const priceEv = (level: number): PlaceIntelligenceEvidence => ({ source: 'PRICE', code: 'PRICE_LEVEL', value: level });
 const bandEv = (band: TimeBandCode): PlaceIntelligenceEvidence => ({ source: 'HOURS', code: 'HOURS_OPEN_WINDOW', value: band });
+// Señales DÉBILES exclusivas de BestVisitTime (V5.8.1): fuerza 1 cada una.
+const timeAffinityEv = (category: CategoryId): PlaceIntelligenceEvidence => ({ source: 'CATEGORY', code: 'CATEGORY_TIME_AFFINITY', value: category });
+const timeWindowEv = (band: TimeBandCode): PlaceIntelligenceEvidence => ({ source: 'HOURS', code: 'HOURS_TIME_WINDOW', value: band });
 const weekdayEv: PlaceIntelligenceEvidence = { source: 'HOURS', code: 'HOURS_OPEN_WEEKDAY', value: true };
 const weekendEv: PlaceIntelligenceEvidence = { source: 'HOURS', code: 'HOURS_OPEN_WEEKEND', value: true };
 const tokenEv = (token: string): PlaceIntelligenceEvidence => ({ source: 'NAME_LEXICON', code: 'NAME_TOKEN', value: token });
@@ -78,13 +81,17 @@ export function analyzeAudiences(s: PlaceSignals): Candidate<PlaceAudience>[] {
 }
 
 // ── Mejor momento ── Ventana orientada a la experiencia; NUNCA fuera de las
-// horas conocidas. Con horas: se exige que el lugar esté ABIERTO en la banda
-// (si está cerrado, se omite). Sin horas: banda típica de categoría (derivada).
+// horas conocidas. Confianza CALIBRADA (V5.8.1):
+//   categoría + apertura compatible → MEDIUM (dos señales fuerza 1);
+//   categoría sin horas → LOW (una sola señal débil);
+//   nunca HIGH solo por categoría y/o compatibilidad de horario.
+// `beer` NO tiene ventana típica por defecto: un expendio/depósito no es
+// inherentemente una experiencia de tarde-noche (hallazgo de la auditoría).
 const CATEGORY_BEST_BANDS: Readonly<Record<CategoryId, readonly TimeBandCode[]>> = {
   coffee: ['BREAKFAST', 'MORNING'],
   food: ['LUNCH', 'DINNER'],
   nightlife: ['EVENING', 'LATE_NIGHT'],
-  beer: ['EVENING'],
+  beer: [],
   pharmacy: [],
   gas: [],
   store: [],
@@ -96,11 +103,13 @@ export function analyzeBestTimes(s: PlaceSignals): Candidate<BestVisitTime>[] {
   for (const band of CATEGORY_BEST_BANDS[s.category]) {
     if (s.hours.hasHours) {
       if (s.hours.openBands.has(band)) {
-        out.push({ code: band, evidence: [catEv(s.category), bandEv(band)] });
+        // Afinidad de categoría + apertura compatible → MEDIUM (2 señales débiles).
+        out.push({ code: band, evidence: [timeAffinityEv(s.category), timeWindowEv(band)] });
       }
       // horas presentes pero cerrado en la banda → se omite (no se afirma)
     } else {
-      out.push({ code: band, evidence: [catEv(s.category)] });
+      // Sin horas: solo expectativa típica de categoría → LOW (una señal débil).
+      out.push({ code: band, evidence: [timeAffinityEv(s.category)] });
     }
   }
   if (s.hours.hasHours && s.hours.openWeekday) {

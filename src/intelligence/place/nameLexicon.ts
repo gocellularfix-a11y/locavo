@@ -8,8 +8,22 @@
  * canónicas. La evidencia se marca como NAME_LEXICON (confianza más baja que un
  * campo estructurado). Extender otra ciudad es añadir DATOS, no cambiar código.
  */
-import { tokenize } from '../../utils/text';
+import { normalizeText } from '../../utils/text';
 import type { PlaceSpecialty } from './placeIntelligenceTypes';
+
+/**
+ * Tokeniza por LÍMITE de carácter no alfanumérico (V5.8.1): la puntuación y los
+ * guiones separan palabras, además del espacio. Reutiliza `normalizeText`
+ * (minúsculas, sin acentos). Sigue siendo coincidencia de TOKEN EXACTO — jamás
+ * substring, stemming ni difuso — y es ReDoS-safe (clase de carácter simple).
+ */
+function lexiconTokens(name: string): Set<string> {
+  const normalized = normalizeText(name);
+  if (normalized.length === 0) {
+    return new Set();
+  }
+  return new Set(normalized.split(/[^a-z0-9]+/).filter((t) => t.length > 0));
+}
 
 /** token normalizado → especialidad canónica (coincidencia exacta de palabra). */
 const TOKEN_SPECIALTY: Readonly<Record<string, PlaceSpecialty>> = {
@@ -19,6 +33,7 @@ const TOKEN_SPECIALTY: Readonly<Record<string, PlaceSpecialty>> = {
   espresso: 'ESPRESSO',
   taqueria: 'TACOS',
   tacos: 'TACOS',
+  taco: 'TACOS',
   mariscos: 'SEAFOOD',
   marisqueria: 'SEAFOOD',
   farmacia: 'PHARMACY',
@@ -53,7 +68,7 @@ export interface LexiconMatch {
  * exacta, deduplicadas y en orden canónico de aparición del token en el léxico.
  */
 export function matchNameLexicon(name: string): LexiconMatch[] {
-  const tokens = new Set(tokenize(name));
+  const tokens = lexiconTokens(name);
   const matches = new Map<PlaceSpecialty, string>();
 
   for (const token of tokens) {

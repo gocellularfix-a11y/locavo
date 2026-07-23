@@ -11,24 +11,25 @@ import { matchNameLexicon, type LexiconMatch } from './nameLexicon';
 
 export interface PlaceSignals {
   readonly category: CategoryId;
-  readonly secondaryCategories: readonly CategoryId[];
   readonly features: PlaceFeatures;
   readonly priceLevel: number | null;
   readonly hours: HoursWindows;
   readonly lexicon: readonly LexiconMatch[];
-  readonly hasPhone: boolean;
-  readonly hasWebsite: boolean;
 }
 
+/**
+ * V5.8.1: V5.8 usa intencionalmente SOLO la categoría canónica primaria. Las
+ * categorías secundarias no se pueblan en el modelo de datos actual y usarlas
+ * arriesgaría afirmaciones no sustentadas; se omiten de forma deliberada. El
+ * contacto (teléfono/sitio) NO describe la experiencia: no entra en las señales
+ * de inteligencia ni en la calidad de evidencia.
+ */
 export function collectPlaceSignals(place: LocavoPlace): PlaceSignals {
   return {
     category: place.category,
-    secondaryCategories: place.secondaryCategories ?? [],
     features: place.features ?? {},
     priceLevel: place.price?.level ?? null,
     hours: deriveHoursWindows(place.hours),
     lexicon: matchNameLexicon(place.name),
-    hasPhone: typeof place.contact?.phone === 'string' && place.contact.phone.trim().length > 0,
-    hasWebsite: typeof place.contact?.website === 'string' && place.contact.website.trim().length > 0,
   };
 }

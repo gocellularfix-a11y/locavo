@@ -23,13 +23,14 @@ describe('V5.8 — mejores momentos derivados de horario', () => {
     expect(codes).toContain('EVENING');
   });
 
-  it('horario ausente ⇒ bandas típicas de categoría (MEDIUM) sin WEEKDAY/WEEKEND', () => {
+  it('horario ausente ⇒ bandas típicas de categoría (LOW, V5.8.1) sin WEEKDAY/WEEKEND', () => {
     const r = buildPlaceIntelligence(makePlace({ category: 'coffee', name: 'Café' }));
     const codes = r.bestTimes.map((b) => b.code);
     expect(codes).toEqual(expect.arrayContaining(['BREAKFAST', 'MORNING']));
     expect(codes).not.toContain('WEEKDAY');
     expect(codes).not.toContain('WEEKEND');
-    expect(r.bestTimes.find((b) => b.code === 'BREAKFAST')?.confidence).toBe('MEDIUM');
+    // Sin horas es solo expectativa típica de categoría ⇒ LOW (no MEDIUM).
+    expect(r.bestTimes.find((b) => b.code === 'BREAKFAST')?.confidence).toBe('LOW');
   });
 
   it('un periodo cerrado NO se etiqueta como mejor momento', () => {

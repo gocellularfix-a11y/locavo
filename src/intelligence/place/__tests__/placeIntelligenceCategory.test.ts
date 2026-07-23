@@ -66,10 +66,11 @@ describe('V5.8 — confianza derivada de la evidencia', () => {
     expect(r.personalities.find((p) => p.code === 'FAMILY_FRIENDLY')?.confidence).toBe('HIGH');
   });
 
-  it('múltiples señales consistentes ⇒ HIGH (categoría + nombre; categoría + horas)', () => {
+  it('especialidad: categoría + nombre coincidentes ⇒ HIGH; mejor momento calibrado a MEDIUM (V5.8.1)', () => {
     const r = buildPlaceIntelligence(makePlace({ category: 'coffee', name: 'Café Central', hours: daily('07:00', '12:00') }));
     expect(r.specialties.find((s) => s.code === 'COFFEE')?.confidence).toBe('HIGH');
-    expect(r.bestTimes.find((b) => b.code === 'BREAKFAST')?.confidence).toBe('HIGH');
+    // Categoría + apertura compatible prueba "disponible", no "mejor" ⇒ MEDIUM (nunca HIGH).
+    expect(r.bestTimes.find((b) => b.code === 'BREAKFAST')?.confidence).toBe('MEDIUM');
   });
 
   it('una señal indirecta débil (léxico solo) NO se vuelve HIGH', () => {

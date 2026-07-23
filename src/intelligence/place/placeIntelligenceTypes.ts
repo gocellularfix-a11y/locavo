@@ -16,16 +16,21 @@ export type EvidenceQuality = 'HIGH' | 'MEDIUM' | 'LOW' | 'INSUFFICIENT';
 /** Fuente estructurada de una evidencia (nunca texto libre generado). */
 export type PlaceIntelligenceEvidenceSource =
   | 'CATEGORY'
-  | 'SECONDARY_CATEGORY'
   | 'FEATURE'
   | 'PRICE'
   | 'HOURS'
   | 'NAME_LEXICON';
 
-/** Código estructurado y cerrado de evidencia. El detalle va en `value`. */
+/**
+ * Código estructurado y cerrado de evidencia. El detalle va en `value`.
+ * V5.8 usa SOLO la categoría primaria (sin categorías secundarias).
+ * `CATEGORY_TIME_AFFINITY` (ventana típica de categoría) y `HOURS_TIME_WINDOW`
+ * (apertura compatible) son señales DÉBILES exclusivas de `BestVisitTime`:
+ * juntas dan MEDIUM, nunca HIGH; ninguna sola supera LOW.
+ */
 export type PlaceIntelligenceEvidenceCode =
   | 'CATEGORY_PRIMARY'
-  | 'CATEGORY_SECONDARY'
+  | 'CATEGORY_TIME_AFFINITY'
   | 'FEATURE_WHEELCHAIR_ACCESSIBLE'
   | 'FEATURE_FAMILY_FRIENDLY'
   | 'FEATURE_PARKING'
@@ -34,6 +39,7 @@ export type PlaceIntelligenceEvidenceCode =
   | 'FEATURE_DELIVERY'
   | 'PRICE_LEVEL'
   | 'HOURS_OPEN_WINDOW'
+  | 'HOURS_TIME_WINDOW'
   | 'HOURS_OPEN_WEEKDAY'
   | 'HOURS_OPEN_WEEKEND'
   | 'NAME_TOKEN';

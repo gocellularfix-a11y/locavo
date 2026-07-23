@@ -72,7 +72,10 @@ function intervalOverlapsBand(interval: TimeInterval, band: readonly [number, nu
 }
 
 export interface HoursWindows {
+  /** El objeto de horario está estructuralmente presente (7 días). */
   readonly hasHours: boolean;
+  /** Existe AL MENOS un intervalo con `open`/`close` válidos y parseables. */
+  readonly hasUsableInterval: boolean;
   readonly openBands: ReadonlySet<TimeBandCode>;
   readonly openWeekday: boolean;
   readonly openWeekend: boolean;
@@ -80,10 +83,16 @@ export interface HoursWindows {
 
 const EMPTY: HoursWindows = {
   hasHours: false,
+  hasUsableInterval: false,
   openBands: new Set(),
   openWeekday: false,
   openWeekend: false,
 };
+
+/** Un intervalo es usable si ambos extremos parsean a minutos válidos. */
+function isUsableInterval(interval: TimeInterval): boolean {
+  return safeMinutes(interval.open) !== null && safeMinutes(interval.close) !== null;
+}
 
 /** Índices 0 = domingo … 6 = sábado (igual que el dominio de horarios). */
 const WEEKDAY_INDEXES = [1, 2, 3, 4, 5];
@@ -94,11 +103,15 @@ export function deriveHoursWindows(hours: OpeningHours | null | undefined): Hour
     return EMPTY;
   }
   const openBands = new Set<TimeBandCode>();
+  let hasUsableInterval = false;
   for (const day of hours.weekly) {
     if (!day) {
       continue;
     }
     for (const interval of day) {
+      if (isUsableInterval(interval)) {
+        hasUsableInterval = true;
+      }
       for (const code of Object.keys(BANDS) as TimeBandCode[]) {
         if (intervalOverlapsBand(interval, BANDS[code])) {
           openBands.add(code);
@@ -106,16 +119,18 @@ export function deriveHoursWindows(hours: OpeningHours | null | undefined): Hour
       }
     }
   }
-  const hasIntervals = (indexes: number[]): boolean =>
+  // Día "abierto" solo si tiene al menos un intervalo USABLE (parseable).
+  const hasUsableIntervals = (indexes: number[]): boolean =>
     indexes.some((d) => {
       const day = hours.weekly[d];
-      return Array.isArray(day) && day.length > 0;
+      return Array.isArray(day) && day.some(isUsableInterval);
     });
 
   return {
     hasHours: true,
+    hasUsableInterval,
     openBands,
-    openWeekday: hasIntervals(WEEKDAY_INDEXES),
-    openWeekend: hasIntervals(WEEKEND_INDEXES),
+    openWeekday: hasUsableIntervals(WEEKDAY_INDEXES),
+    openWeekend: hasUsableIntervals(WEEKEND_INDEXES),
   };
 }
