@@ -162,10 +162,11 @@ V5.0 changes nothing about OSM matching or its runtime flag.
   seed); optional richer distance curves; per-field OSM provenance in evidence.
 - **Consumer surface** — wire the engine to a decision UI with localized
   explanation rendering (the structured codes already support it).
-- **Prerequisite (carried from the prior OSM audit):** before OSM runtime
-  enablement, untrusted OSM `website`/`phone` values must be scheme-validated
-  before reaching `Linking.openURL` (`src/app/place/[id].tsx`). This is a hard
-  gate for that separate milestone and is out of scope for V5.0.
+- **Prerequisite (carried from the prior OSM audit) — RESOLVED in V5.7:**
+  untrusted `website`/`phone` values are now scheme/format-validated by the pure
+  action policy (`src/actions`) before any `Linking.openURL`, and the place-detail
+  screen no longer passes raw fields to an opener (see §16). The hard gate for OSM
+  runtime enablement is satisfied; OSM runtime enrichment itself remains off.
 
 ## 12. Candidate Retrieval (V5.3)
 
@@ -431,3 +432,73 @@ recorded.
 
 V5.0–V5.5 remain separate and unchanged; decision selection is strictly an
 additional, bounded, explainable layer on top of the ranked models.
+
+## 16. Safe Decision Actions (V5.7)
+
+**Milestone question.** Can the user *safely act* on a Locavo decision? V5.6
+picks the best place; V5.7 makes the real-world actions (directions, call,
+website) safe, deterministic, explicit, and consistent. It does not change how a
+place was selected.
+
+**Action-layer boundary.** `src/actions` is a pure domain (no React, no
+`Linking`, no network, no persistence, no side effects, no randomness). It
+consumes the canonical `LocavoPlace` fields (coordinates, phone, website) and
+emits immutable structured `PlaceAction`s with typed reason codes. Presentation
+maps codes to i18n keys; a separate platform boundary
+(`src/services/placeActionExecutor.ts`) performs the external open. Pure action
+construction is unit-testable without React Native (enforced by a source-scan
+test).
+
+**Model.** `PlaceActionType` = DIRECTIONS | CALL | WEBSITE; `availability` =
+AVAILABLE | UNAVAILABLE | INVALID; `target` = canonical string (`tel:…`,
+`https:…`, or `"lat,lng"`) or null; `reasonCode` ∈ {ACTION_AVAILABLE,
+ACTION_MISSING_VALUE, ACTION_INVALID_COORDINATES, ACTION_INVALID_PHONE,
+ACTION_INVALID_URL, ACTION_UNSUPPORTED_SCHEME}. Missing value → UNAVAILABLE;
+malformed/unsafe → INVALID. `ACTION_OPEN_FAILED` is an execution outcome, not a
+domain state.
+
+**Coordinate policy.** Reuses `isValidCoordinates`: latitude/longitude finite,
+`|lat| ≤ 90`, `|lng| ≤ 180`. Invalid coordinates never become directions and are
+never silently coerced to zero. `(0,0)` is canonically valid and is **not**
+treated as missing. Directions retain the existing approved Google Maps universal
+provider (coordinate-validated, failure-catching) — no new map provider, no
+runtime OSM enrichment.
+
+**Phone normalization.** Trims; allows a single leading `+`; strips safe visual
+separators (space, `(`, `)`, `.`, `-`); rejects letters, embedded schemes
+(`tel:`), URL fragments/queries, control characters, and empty results; requires
+7–15 digits (E.164 upper bound); emits a canonical `tel:` only after validation.
+Country codes are never inferred; the stored record is never modified.
+
+**URL validation (structural only, no network, no redirects, no `new URL`).**
+Allowed schemes: `https:` and `http:` (the latter explicitly permitted by product
+policy). Rejects `javascript:`, `data:`, `file:`, `intent:`, `content:`, `ftp:`,
+`tel:`, `mailto:`, scheme-relative `//host`, embedded credentials, control
+characters, empty/single-label hosts, and non-numeric ports. Bare domains are
+normalized deterministically to `https://` (documented and tested). Host lowercased
+and re-serialized into a canonical target.
+
+**UI execution gate.** All place-detail external opens route through one approved
+boundary. The previously-unsafe `Linking.openURL(rawWebsite)` is removed; website
+and call now execute the *validated* target via `executePlaceAction`, which
+confirms `AVAILABLE` + non-null target, opens, and reports rejection/failure as
+`ACTION_OPEN_FAILED` without crashing. Directions keep their existing
+coordinate-validated provider gate (preserving the V5.4 `REQUEST_DIRECTIONS`
+interaction and the failure/retry notice). Unavailable actions are omitted rather
+than shown as broken buttons; present-but-invalid contact values may still be
+displayed as plain (non-interactive) text — never as an enabled control and never
+inventing missing data.
+
+**Unknown/invalid data.** Missing phone/website → no action (omitted). Invalid
+phone/website → INVALID, no enabled control. Invalid coordinates → no directions.
+One invalid action never suppresses the other valid actions.
+
+**Complexity & privacy.** Each policy is `O(n)` in the field length; building the
+set is constant work over three fields, memoized once per loaded place. No
+accounts, network, analytics, telemetry, persistence, action history, background
+location, automatic calling/opening, or randomness.
+
+**Frozen engines.** V5.0 quality/confidence, V5.1 presentation, V5.2 context,
+V5.3 retrieval, V5.4 preferences, V5.5 intent, V5.6 decision, and Surprise are
+untouched. V5.7 is an action-policy layer that consumes existing outputs; the only
+integration edits are import-and-render changes in `src/app/place/[id].tsx`.

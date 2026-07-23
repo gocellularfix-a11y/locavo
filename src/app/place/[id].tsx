@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { buildPlaceActions } from '../../actions';
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
 import { CategoryBadge } from '../../components/CategoryBadge';
@@ -24,6 +25,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import { usePreferences } from '../../preferences/PreferenceContext';
 import { useDirections } from '../../hooks/useDirections';
 import { analytics, placeSearchService } from '../../services/container';
+import { executePlaceAction } from '../../services/placeActionExecutor';
 import { scorePlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
@@ -119,6 +121,20 @@ export default function PlaceDetailScreen() {
     () => (state.status === 'ready' ? scorePlace(state.place, location.coords, new Date()) : null),
     [state, location.coords],
   );
+
+  // Acciones seguras (V5.7): validadas en el dominio; jamás campos crudos.
+  const actions = useMemo(
+    () => (state.status === 'ready' ? buildPlaceActions(state.place) : null),
+    [state],
+  );
+  const [actionFailed, setActionFailed] = useState(false);
+  const runAction = async (action: NonNullable<typeof actions>['call']) => {
+    setActionFailed(false);
+    const outcome = await executePlaceAction(action);
+    if (!outcome.opened) {
+      setActionFailed(true);
+    }
+  };
 
   const back = () => (router.canGoBack() ? router.back() : router.push('/'));
 
@@ -217,15 +233,17 @@ export default function PlaceDetailScreen() {
           {explainReasonsLocalized(scored.reasons, locale)}
         </AppText>
 
-        <AppButton
-          label={t('place.directions')}
-          icon="navigate"
-          onPress={() => {
-            dispatch({ type: 'REQUEST_DIRECTIONS', placeId: place.id });
-            directions.navigateTo(place);
-          }}
-          accessibilityHint={t('place.directionsHint')}
-        />
+        {actions?.directions.availability === 'AVAILABLE' ? (
+          <AppButton
+            label={t('place.directions')}
+            icon="navigate"
+            onPress={() => {
+              dispatch({ type: 'REQUEST_DIRECTIONS', placeId: place.id });
+              directions.navigateTo(place);
+            }}
+            accessibilityHint={t('place.directionsHint')}
+          />
+        ) : null}
 
         {directions.failedPlace ? (
           <NavigationErrorNotice
@@ -235,23 +253,48 @@ export default function PlaceDetailScreen() {
           />
         ) : null}
 
+        {actionFailed ? (
+          <AppText
+            variant="caption"
+            color={colors.danger}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            {t('place.actionFailed')}
+          </AppText>
+        ) : null}
+
         <View style={{ gap: spacing.lg }}>
           {place.address?.formatted ? (
             <DetailRow icon="location" label={t('place.address')} value={place.address.formatted} />
           ) : null}
           {place.contact?.phone ? (
-            <DetailRow icon="call" label={t('place.phone')} value={place.contact.phone} />
+            actions?.call.availability === 'AVAILABLE' ? (
+              <Pressable
+                onPress={() => runAction(actions.call)}
+                accessibilityRole="button"
+                accessibilityLabel={t('place.callA11y', { name: place.name })}
+                accessibilityHint={t('place.callHint')}
+              >
+                <DetailRow icon="call" label={t('place.call')} value={place.contact.phone} />
+              </Pressable>
+            ) : (
+              <DetailRow icon="call" label={t('place.phone')} value={place.contact.phone} />
+            )
           ) : null}
           {website ? (
-            <Pressable
-              onPress={() => {
-                Linking.openURL(website).catch(() => undefined);
-              }}
-              accessibilityRole="link"
-              accessibilityLabel={t('place.websiteA11y', { name: place.name })}
-            >
+            actions?.website.availability === 'AVAILABLE' ? (
+              <Pressable
+                onPress={() => runAction(actions.website)}
+                accessibilityRole="link"
+                accessibilityLabel={t('place.websiteA11y', { name: place.name })}
+                accessibilityHint={t('place.websiteHint')}
+              >
+                <DetailRow icon="globe" label={t('place.website')} value={website} />
+              </Pressable>
+            ) : (
               <DetailRow icon="globe" label={t('place.website')} value={website} />
-            </Pressable>
+            )
           ) : null}
           <DetailRow
             icon="cash"
