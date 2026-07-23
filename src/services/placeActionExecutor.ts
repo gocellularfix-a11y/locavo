@@ -28,6 +28,7 @@ export async function executePlaceAction(action: PlaceAction): Promise<PlaceActi
   }
   try {
     if (action.type === 'DIRECTIONS') {
+      // La gramática canónica se re-verifica aquí; nunca se confía en el llamador.
       const coords = parseDirectionsTarget(action.target);
       if (!coords) {
         return BLOCKED;
@@ -35,9 +36,13 @@ export async function executePlaceAction(action: PlaceAction): Promise<PlaceActi
       const opened = await googleMapsProvider.openDirections(coords);
       return opened ? OPENED : FAILED;
     }
-    // CALL (`tel:`) y WEBSITE (`https:`/`http:`) ya canónicos y validados.
-    await Linking.openURL(action.target);
-    return OPENED;
+    if (action.type === 'CALL' || action.type === 'WEBSITE') {
+      // Destinos ya canónicos y validados (`tel:` / `https:`|`http:`).
+      await Linking.openURL(action.target);
+      return OPENED;
+    }
+    // Tipo de acción no soportado: se rechaza (nunca se abre nada).
+    return BLOCKED;
   } catch {
     return FAILED;
   }

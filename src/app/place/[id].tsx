@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { buildPlaceActions } from '../../actions';
+import { placeActionDisplay } from './placeActionLabels';
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
 import { CategoryBadge } from '../../components/CategoryBadge';
@@ -268,8 +269,20 @@ export default function PlaceDetailScreen() {
           {place.address?.formatted ? (
             <DetailRow icon="location" label={t('place.address')} value={place.address.formatted} />
           ) : null}
-          {place.contact?.phone ? (
-            actions?.call.availability === 'AVAILABLE' ? (
+          {(() => {
+            // Teléfono (V5.7.1): válido → accionable con el número legible; inválido
+            // → razón localizada NO accionable (nunca el texto crudo); ausente → oculto.
+            if (!actions || !place.contact?.phone) {
+              return null;
+            }
+            const d = placeActionDisplay(actions.call);
+            if (d.kind === 'hidden') {
+              return null;
+            }
+            if (d.kind === 'invalid') {
+              return <DetailRow icon="call" label={t('place.phone')} value={t(d.reasonKey)} />;
+            }
+            return (
               <Pressable
                 onPress={() => runAction(actions.call)}
                 accessibilityRole="button"
@@ -278,24 +291,33 @@ export default function PlaceDetailScreen() {
               >
                 <DetailRow icon="call" label={t('place.call')} value={place.contact.phone} />
               </Pressable>
-            ) : (
-              <DetailRow icon="call" label={t('place.phone')} value={place.contact.phone} />
-            )
-          ) : null}
-          {website ? (
-            actions?.website.availability === 'AVAILABLE' ? (
+            );
+          })()}
+          {(() => {
+            // Sitio web (V5.7.1): válido → muestra el destino NORMALIZADO (sin desajuste
+            // con lo ejecutado) y abre solo el destino validado; inválido → razón
+            // localizada NO accionable (nunca la cadena cruda); ausente → oculto.
+            if (!actions || !website) {
+              return null;
+            }
+            const d = placeActionDisplay(actions.website);
+            if (d.kind === 'hidden') {
+              return null;
+            }
+            if (d.kind === 'invalid') {
+              return <DetailRow icon="globe" label={t('place.website')} value={t(d.reasonKey)} />;
+            }
+            return (
               <Pressable
                 onPress={() => runAction(actions.website)}
                 accessibilityRole="link"
                 accessibilityLabel={t('place.websiteA11y', { name: place.name })}
                 accessibilityHint={t('place.websiteHint')}
               >
-                <DetailRow icon="globe" label={t('place.website')} value={website} />
+                <DetailRow icon="globe" label={t('place.website')} value={actions.website.target ?? website} />
               </Pressable>
-            ) : (
-              <DetailRow icon="globe" label={t('place.website')} value={website} />
-            )
-          ) : null}
+            );
+          })()}
           <DetailRow
             icon="cash"
             label={t('place.priceLevel')}

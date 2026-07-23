@@ -502,3 +502,44 @@ location, automatic calling/opening, or randomness.
 V5.3 retrieval, V5.4 preferences, V5.5 intent, V5.6 decision, and Surprise are
 untouched. V5.7 is an action-policy layer that consumes existing outputs; the only
 integration edits are import-and-render changes in `src/app/place/[id].tsx`.
+
+### 16.1 Closure (V5.7.1)
+
+The independent architecture audit's minor findings are closed:
+
+- **One canonical execution boundary.** `executePlaceAction` is now the single
+  external-action gate for **all** actions. Directions no longer call the
+  navigation provider directly: `useDirections` delegates to `executePlaceAction`
+  (which delegates to the approved Google Maps universal provider), preserving
+  the failure/retry UX and the existing `navigation_requested` /
+  `directions_opened` analytics (no analytics added). A source-scan test asserts
+  `.openDirections(` is invoked **only** from `placeActionExecutor.ts`. The
+  executor explicitly routes DIRECTIONS→provider and CALL/WEBSITE→`Linking`, and
+  **refuses** unsupported action types, unavailable actions, and null/malformed
+  targets (returning `ACTION_BLOCKED`).
+- **URL port policy.** A port is accepted only when it is all digits **and**
+  `0–65535`; `65536`, `70000`, `99999`, non-numeric, and empty ports are
+  rejected. Port-less URLs are unaffected.
+- **Strict directions grammar.** `parseDirectionsTarget` accepts only the exact
+  canonical `"${number},${number}"` the validated builder emits, enforced by a
+  canonical round-trip (`String(Number(part)) === part`). It rejects empty/
+  whitespace components, `","`, hexadecimal, non-canonical numeric forms
+  (`+24`, `24.80`, `-0`), extra components, `NaN`, `Infinity`, and out-of-range
+  values; `(0,0)` and canonical exponent forms remain valid.
+- **Unicode / invisible-character policy.** URL validation rejects, in **any**
+  position (scheme/host/port/path/query/fragment), C1 controls (U+0080–U+009F),
+  NBSP (U+00A0), line/paragraph separators (U+2028/U+2029), zero-width and
+  directional marks (U+200B–U+200F), word joiner (U+2060), and BOM/ZWNBSP
+  (U+FEFF) — checked on the **raw** value so trailing occurrences are rejected,
+  not silently trimmed. ASCII control/space is rejected after trimming legitimate
+  edge whitespace. Legitimate visible international text (e.g. accented path
+  segments) is preserved.
+- **Invalid-value presentation.** `placeActionDisplay` is the deterministic
+  policy: AVAILABLE → actionable showing the **normalized** value (website shows
+  the normalized target, removing the bare-domain display/execute mismatch);
+  INVALID → non-actionable localized reason (never the raw malformed/unsafe
+  string); MISSING → omitted. The raw value is never executed.
+
+Frozen engines remain untouched in V5.7.1; the only changes are within Safe
+Decision Actions (`src/actions`, `src/services/placeActionExecutor.ts`,
+`src/hooks/useDirections.ts`, `src/app/place/[id].tsx`, and action tests).

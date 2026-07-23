@@ -26,8 +26,15 @@ export const ALLOWED_WEB_SCHEMES: readonly string[] = ['https', 'http'];
 
 /** Host válido: ≥2 etiquetas alfanuméricas (con guiones internos) y un TLD. */
 const HOST_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
-/** Cualquier carácter de control (C0), espacio o DEL invalida la URL. */
-const CONTROL_OR_SPACE_RE = /[\u0000-\u0020\u007f]/;
+/**
+ * Caracteres peligrosos/invisibles que invalidan la URL en cualquier posicion
+ * (esquema, host, puerto, ruta, consulta, fragmento): controles C0 y espacio
+ * (0000-0020), DEL + controles C1 + NBSP (007f-00a0), separadores de linea y
+ * parrafo (2028/2029), ancho cero y marcas direccionales (200b-200f), union de
+ * palabras (2060) y BOM/ZWNBSP (feff). No rechaza texto internacional visible.
+ */
+const ASCII_CTRL_RE = /[\u0000-\u0020\u007f]/;
+const INVISIBLE_RE = /[\u0080-\u00a0\u2028\u2029\u200b-\u200f\u2060\ufeff]/;
 const SCHEME_RE = /^([a-zA-Z][a-zA-Z0-9+.-]*):/;
 
 const MISSING: UrlValidation = { valid: false, target: null, reasonCode: 'ACTION_MISSING_VALUE' };
@@ -45,12 +52,19 @@ export function validateWebsite(raw: string | undefined | null): UrlValidation {
   if (raw === undefined || raw === null) {
     return MISSING;
   }
+  // Invisibles peligrosos (C1, NBSP, separadores de línea/párrafo, ancho cero,
+  // marcas direccionales, unión de palabras, BOM) se rechazan en CUALQUIER
+  // posición sobre el valor crudo: nunca son legítimos, ni en los extremos, y
+  // `trim` no debe "limpiarlos" silenciosamente.
+  if (INVISIBLE_RE.test(raw)) {
+    return INVALID;
+  }
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
     return MISSING;
   }
-  // Cualquier carácter de control o espacio interno invalida.
-  if (CONTROL_OR_SPACE_RE.test(trimmed)) {
+  // Control ASCII (C0), espacio o DEL interno invalida.
+  if (ASCII_CTRL_RE.test(trimmed)) {
     return INVALID;
   }
   // URL relativa al esquema.
@@ -104,7 +118,8 @@ export function validateWebsite(raw: string | undefined | null): UrlValidation {
   if (colon !== -1) {
     host = authority.slice(0, colon);
     port = authority.slice(colon + 1);
-    if (!/^[0-9]{1,5}$/.test(port)) {
+    // Puerto: solo dígitos y dentro del rango TCP válido 0–65535.
+    if (!/^[0-9]{1,5}$/.test(port) || Number(port) > 65535) {
       return INVALID;
     }
   }

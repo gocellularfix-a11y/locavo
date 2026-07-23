@@ -3,7 +3,7 @@
  * i18n tipadas. El dominio (`src/actions`) solo emite códigos; aquí (y solo
  * aquí) se traducen. Sin prosa generada.
  */
-import type { PlaceActionOutcomeCode, PlaceActionReasonCode } from '../../actions';
+import type { PlaceAction, PlaceActionOutcomeCode, PlaceActionReasonCode } from '../../actions';
 import type { TranslationKey } from '../../i18n/locales/es';
 
 const REASON_KEY: Readonly<Record<PlaceActionReasonCode, TranslationKey>> = {
@@ -27,4 +27,30 @@ export function placeActionReasonLabelKey(code: PlaceActionReasonCode): Translat
 
 export function placeActionOutcomeLabelKey(code: PlaceActionOutcomeCode): TranslationKey {
   return OUTCOME_KEY[code];
+}
+
+/**
+ * Política DETERMINISTA de presentación de una acción de contacto (V5.7.1):
+ * - `AVAILABLE`  → accionable; la UI muestra el valor NORMALIZADO (nunca el
+ *   crudo) y ejecuta solo el destino validado.
+ * - `INVALID`    → NO accionable; se muestra una razón localizada, jamás el
+ *   texto crudo malformado/inseguro como si fuera información útil.
+ * - `UNAVAILABLE` (o cualquier otro) → oculto (se conserva el comportamiento
+ *   existente de "no disponible": la fila se omite).
+ */
+export type PlaceActionDisplay =
+  | { readonly kind: 'actionable' }
+  | { readonly kind: 'invalid'; readonly reasonKey: TranslationKey }
+  | { readonly kind: 'hidden' };
+
+export function placeActionDisplay(action: PlaceAction): PlaceActionDisplay {
+  switch (action.availability) {
+    case 'AVAILABLE':
+      return { kind: 'actionable' };
+    case 'INVALID':
+      return { kind: 'invalid', reasonKey: placeActionReasonLabelKey(action.reasonCode) };
+    case 'UNAVAILABLE':
+    default:
+      return { kind: 'hidden' };
+  }
 }

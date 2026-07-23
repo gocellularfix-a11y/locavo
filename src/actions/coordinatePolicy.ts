@@ -36,14 +36,34 @@ export function validateDirections(coords: Coordinates | undefined | null): Dire
   return { valid: true, target: `${coords.latitude},${coords.longitude}`, reasonCode: 'ACTION_AVAILABLE' };
 }
 
-/** Reconstruye coordenadas desde un destino canónico `"lat,lng"`; `null` si es inválido. */
+/**
+ * Reconstruye coordenadas desde el destino canónico `"lat,lng"`. ESTRICTO: solo
+ * acepta EXACTAMENTE el formato serializado que produce `validateDirections`
+ * (`${number},${number}`), sin confiar en los llamadores. Rechaza: número de
+ * componentes distinto de 2, componentes vacíos o en blanco, hexadecimal,
+ * espacios, signos/formatos no canónicos, `NaN`, `Infinity` y fuera de rango.
+ *
+ * La garantía se obtiene con un round-trip canónico: un componente es válido
+ * solo si `String(Number(componente)) === componente`. Así "24.8069" se acepta,
+ * pero "", " 24", "0x10", "24.80", "+24", "NaN", "Infinity" se rechazan. Las
+ * notaciones exponenciales solo se aceptan cuando SON la forma canónica que
+ * `String(number)` emitiría (p. ej. magnitudes muy pequeñas), nunca como truco.
+ */
 export function parseDirectionsTarget(target: string): Coordinates | null {
   const parts = target.split(',');
   if (parts.length !== 2) {
     return null;
   }
-  const latitude = Number(parts[0]);
-  const longitude = Number(parts[1]);
+  const [latStr, lngStr] = parts;
+  const latitude = Number(latStr);
+  const longitude = Number(lngStr);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+  // Round-trip canónico: rechaza vacío, espacios, hex y formatos no canónicos.
+  if (String(latitude) !== latStr || String(longitude) !== lngStr) {
+    return null;
+  }
   const coords = { latitude, longitude };
   return isValidCoordinates(coords) ? coords : null;
 }
