@@ -3,6 +3,13 @@ import type { CategoryId, Coordinates } from '../../domain/place';
 import type { LocavoPlace } from '../../domain/places/LocavoPlace';
 import { interpretQuery } from '../../domain/queryInterpreter';
 import type { SearchIntent } from '../../domain/searchIntent';
+import {
+  decodeNearbyCursor,
+  encodeNearbyCursor,
+  isExpandedRadius,
+  plainCursorOf,
+  searchWithExpandingRadius,
+} from './nearbyRadius';
 import { rankPlaces, type ScoredPlace } from './PlaceRankingService';
 import { rankSearchResults } from './SearchRankingService';
 import type { AnalyticsService } from '../analytics';
@@ -26,8 +33,12 @@ export interface PlaceSearchRequest {
   cursor?: string;
 }
 
-/** Aviso truthful mostrado por la UI (sin afirmar datos que no existen). */
-export type SearchNotice = 'HOURS_UNAVAILABLE';
+/**
+ * Aviso truthful mostrado por la UI (sin afirmar datos que no existen).
+ * `NO_NEARBY_RESULTS`: no había nada en el entorno inmediato y se amplió el
+ * radio; lo mostrado está lejos y la UI debe decirlo.
+ */
+export type SearchNotice = 'HOURS_UNAVAILABLE' | 'NO_NEARBY_RESULTS';
 
 export interface PlaceSearchResponse {
   results: ScoredPlace[];
@@ -39,7 +50,6 @@ export interface PlaceSearchResponse {
   notice?: SearchNotice;
 }
 
-const DEFAULT_NEARBY_RADIUS_M = 20_000;
 const FETCH_LIMIT = 50;
 /**
  * Cotas de seguridad para reunir candidatos de TEXTO antes del ranking global.
@@ -107,7 +117,8 @@ export class PlaceSearchService {
 
       // Paginación DESPUÉS del ranking: cursor = offset dentro del orden global.
       const pageSize = request.limit ?? FETCH_LIMIT;
-      const offset = cursor ? Number.parseInt(cursor, 10) || 0 : 0;
+      const textCursor = plainCursorOf(cursor);
+      const offset = textCursor ? Number.parseInt(textCursor, 10) || 0 : 0;
       const page = ranked.slice(offset, offset + pageSize);
       const nextOffset = offset + page.length;
       const nextCursor = nextOffset < ranked.length ? String(nextOffset) : undefined;
@@ -131,28 +142,52 @@ export class PlaceSearchService {
     // distancia es la señal correcta, por lo que este flujo no cambia. ──
     let places: LocavoPlace[];
     let nextCursor: string | undefined;
+    let radiusExpanded = false;
     try {
       if (effectiveCategories && effectiveCategories.length === 1) {
         // Intención pura de categoría ("tengo hambre" → food) o chip de categoría.
+        // El listado por categoría ordena por distancia SIN filtrar por radio:
+        // no esconde lugares lejanos, así que no necesita ampliación.
         const result = await this.repository.listByCategory(effectiveCategories[0], {
           latitude: origin.latitude,
           longitude: origin.longitude,
           limit: FETCH_LIMIT,
-          cursor,
+          cursor: plainCursorOf(cursor),
         });
         places = result.places;
         nextCursor = result.nextCursor;
       } else {
-        // Sin texto ni categoría (o "cerca" a secas): explorar el entorno.
-        const result = await this.repository.searchNearby({
-          latitude: origin.latitude,
-          longitude: origin.longitude,
-          radiusMeters: DEFAULT_NEARBY_RADIUS_M,
-          limit: FETCH_LIMIT,
-          cursor,
-        });
-        places = result.places;
-        nextCursor = result.nextCursor;
+        // Sin texto ni categoría (o "cerca" a secas): explorar el entorno. Si el
+        // radio base no devuelve nada, se AMPLÍA por escalones deterministas en
+        // vez de fingir que no existe nada: las distancias siguen siendo reales
+        // y el aviso dirá que lo mostrado no está cerca.
+        const requested = decodeNearbyCursor(cursor);
+        const probe = (radiusMeters: number) =>
+          this.repository.searchNearby({
+            latitude: origin.latitude,
+            longitude: origin.longitude,
+            radiusMeters,
+            limit: FETCH_LIMIT,
+            cursor: requested.cursor,
+          });
+
+        // Página siguiente: se reusa el radio ya fijado para recorrer el MISMO
+        // conjunto; solo la primera página elige escalón.
+        const outcome =
+          requested.radiusMeters !== null
+            ? {
+                value: await probe(requested.radiusMeters),
+                radiusMeters: requested.radiusMeters,
+                expanded: isExpandedRadius(requested.radiusMeters),
+              }
+            : await searchWithExpandingRadius(probe, (result) => result.places.length > 0);
+
+        places = outcome.value.places;
+        radiusExpanded = outcome.expanded;
+        nextCursor =
+          outcome.value.nextCursor !== undefined
+            ? encodeNearbyCursor(outcome.radiusMeters, outcome.value.nextCursor)
+            : undefined;
       }
     } catch (error) {
       this.analytics.track({
@@ -181,11 +216,18 @@ export class PlaceSearchService {
       metadata: { resultCount: ranked.length },
     });
 
+    // Un solo aviso: el de horarios (filtro explícito del usuario) tiene
+    // prioridad. Sin resultados no hace falta advertir que están lejos: el
+    // estado vacío ya lo dice.
+    const notice: SearchNotice | undefined =
+      openNowResult.notice ??
+      (radiusExpanded && ranked.length > 0 ? 'NO_NEARBY_RESULTS' : undefined);
+
     return {
       results: ranked,
       ...(nextCursor !== undefined ? { nextCursor } : {}),
       ...(intent ? { intent } : {}),
-      ...(openNowResult.notice ? { notice: openNowResult.notice } : {}),
+      ...(notice ? { notice } : {}),
     };
   }
 

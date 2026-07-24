@@ -121,6 +121,7 @@ export const en: TranslationCatalog = {
   'reason.CATEGORY_MATCH': 'it matches the category you searched',
   'reason.TERM_MATCH': 'it matches your search',
   'search.hoursUnconfirmed': "Opening hours aren't confirmed; showing matches by relevance.",
+  'search.noNearbyResults': "There's nothing near you; showing the closest places I have, far as they are.",
 
   // Smart recommendations (V5.1)
   'rec.section.title': 'Recommended for you',

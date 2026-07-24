@@ -1,10 +1,12 @@
 import {
   InvalidPlaceQueryError,
   MAX_LIMIT,
+  MAX_RADIUS_METERS,
   validateListOptions,
   validateNearbyQuery,
   validateTextQuery,
 } from '../PlaceQuery';
+import { NEARBY_RADIUS_LADDER_M } from '../../../services/places/nearbyRadius';
 
 const VALID_NEARBY = { latitude: 24.8, longitude: -107.4, radiusMeters: 2000 };
 
@@ -32,12 +34,24 @@ describe('validateNearbyQuery', () => {
     expect(() => validateNearbyQuery({ ...VALID_NEARBY, radiusMeters: 50 })).toThrow(
       InvalidPlaceQueryError,
     );
-    expect(() => validateNearbyQuery({ ...VALID_NEARBY, radiusMeters: 50_000 })).toThrow(
+    expect(() =>
+      validateNearbyQuery({ ...VALID_NEARBY, radiusMeters: MAX_RADIUS_METERS + 1 }),
+    ).toThrow(InvalidPlaceQueryError);
+    expect(() => validateNearbyQuery({ ...VALID_NEARBY, radiusMeters: -1 })).toThrow(
       InvalidPlaceQueryError,
     );
     expect(() => validateNearbyQuery({ ...VALID_NEARBY, radiusMeters: Infinity })).toThrow(
       InvalidPlaceQueryError,
     );
+  });
+
+  it('acepta los radios ampliados de la escalera de exploración', () => {
+    // La cota es estructural: la política de alcance vive en la escalera.
+    for (const radiusMeters of NEARBY_RADIUS_LADDER_M) {
+      expect(validateNearbyQuery({ ...VALID_NEARBY, radiusMeters }).radiusMeters).toBe(
+        radiusMeters,
+      );
+    }
   });
 
   it('rechaza límites no razonables', () => {

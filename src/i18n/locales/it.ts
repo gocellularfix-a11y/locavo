@@ -123,6 +123,7 @@ export const it: TranslationCatalog = {
   'reason.CATEGORY_MATCH': 'corrisponde alla categoria cercata',
   'reason.TERM_MATCH': 'corrisponde alla tua ricerca',
   'search.hoursUnconfirmed': 'Gli orari non sono confermati; mostro i risultati per pertinenza.',
+  'search.noNearbyResults': 'Non c’è nulla vicino a te; mostro i luoghi più vicini che ho, anche se lontani.',
 
   // Raccomandazioni intelligenti (V5.1)
   'rec.section.title': 'Consigliati per te',

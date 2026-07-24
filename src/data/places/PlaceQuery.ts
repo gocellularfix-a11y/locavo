@@ -9,7 +9,14 @@ import type { LocavoCategory } from '../../domain/places/LocavoPlace';
  */
 
 export const MIN_RADIUS_METERS = 100;
-export const MAX_RADIUS_METERS = 30_000;
+/**
+ * Cota ESTRUCTURAL, no política de producto: cubre cualquier par de puntos de
+ * la Tierra y solo rechaza valores absurdos (negativos, NaN, infinitos). La
+ * política del radio de exploración vive en la escalera determinista de
+ * `services/places/nearbyRadius.ts`, que amplía el alcance cuando no hay nada
+ * cerca en vez de esconder resultados.
+ */
+export const MAX_RADIUS_METERS = 20_100_000;
 export const DEFAULT_LIMIT = 20;
 export const MAX_LIMIT = 50;
 

@@ -3,6 +3,7 @@ import { haversineKm, isValidCoordinates } from '../../domain/distance';
 import { evaluateOpenStatus } from '../../domain/openingHours';
 import type { Coordinates } from '../../domain/place';
 import type { LocavoPlace } from '../../domain/places/LocavoPlace';
+import { searchWithExpandingRadius } from '../../services/places/nearbyRadius';
 import { getPreferredCategories, getTimeOfDayContext } from './timeOfDay';
 
 /**
@@ -125,7 +126,6 @@ export interface SurpriseRequest {
 }
 
 const SURPRISE_FETCH_LIMIT = 50;
-const SURPRISE_FALLBACK_RADIUS_M = 20_000;
 
 /**
  * Servicio de sesión: carga candidatos del repositorio activo y recuerda el
@@ -154,15 +154,21 @@ export class SurprisePlaceService {
       }
     }
 
-    // Sin resultados en las categorías de la franja → todo el entorno.
+    // Sin resultados en las categorías de la franja → todo el entorno, con el
+    // radio ampliándose por escalones si no hay nada cerca (misma política que
+    // la exploración; jamás devuelve vacío por estar lejos de la ciudad).
     if (candidates.size === 0 && origin) {
-      const nearby = await this.repository.searchNearby({
-        latitude: origin.latitude,
-        longitude: origin.longitude,
-        radiusMeters: SURPRISE_FALLBACK_RADIUS_M,
-        limit: SURPRISE_FETCH_LIMIT,
-      });
-      for (const place of nearby.places) {
+      const nearby = await searchWithExpandingRadius(
+        (radiusMeters) =>
+          this.repository.searchNearby({
+            latitude: origin.latitude,
+            longitude: origin.longitude,
+            radiusMeters,
+            limit: SURPRISE_FETCH_LIMIT,
+          }),
+        (result) => result.places.length > 0,
+      );
+      for (const place of nearby.value.places) {
         candidates.set(place.id, place);
       }
     }

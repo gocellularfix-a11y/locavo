@@ -137,6 +137,7 @@ export const es = {
   'reason.CATEGORY_MATCH': 'coincide con la categoría buscada',
   'reason.TERM_MATCH': 'coincide con tu búsqueda',
   'search.hoursUnconfirmed': 'Los horarios no están confirmados; muestro coincidencias por relevancia.',
+  'search.noNearbyResults': 'No hay lugares cerca de ti; muestro los más cercanos que tengo, aunque estén lejos.',
 
   // Recomendaciones inteligentes (V5.1)
   'rec.section.title': 'Recomendado para ti',

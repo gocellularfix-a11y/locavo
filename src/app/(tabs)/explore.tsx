@@ -287,6 +287,17 @@ export default function ExploreScreen() {
         </View>
       ) : null}
 
+      {/* Aviso truthful: no había nada cerca y se amplió el radio. Lo mostrado
+          está lejos y se dice explícitamente; la distancia real no se retoca. */}
+      {notice === 'NO_NEARBY_RESULTS' ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Ionicons name="navigate-outline" size={16} color={colors.warning} />
+          <AppText variant="caption" tone="secondary" style={{ flex: 1 }}>
+            {t('search.noNearbyResults')}
+          </AppText>
+        </View>
+      ) : null}
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

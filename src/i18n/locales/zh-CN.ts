@@ -120,6 +120,7 @@ export const zhCN: TranslationCatalog = {
   'reason.CATEGORY_MATCH': '与你搜索的类别匹配',
   'reason.TERM_MATCH': '与你的搜索匹配',
   'search.hoursUnconfirmed': '营业时间未确认；按相关性显示结果。',
+  'search.noNearbyResults': '你附近没有地点；显示我拥有的最近地点，尽管距离很远。',
 
   // 智能推荐 (V5.1)
   'rec.section.title': '为你推荐',
