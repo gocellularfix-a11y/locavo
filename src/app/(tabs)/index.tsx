@@ -1,14 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppText } from '../../components/AppText';
-import { LoadingState } from '../../components/FeedbackStates';
 import { LocavoWordmark } from '../../components/LocavoWordmark';
-import { NavigationErrorNotice } from '../../components/NavigationErrorNotice';
-import { RecommendedPlaceCard } from '../../components/RecommendedPlaceCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { CATEGORIES, type CategoryMeta } from '../../domain/categories';
 import { CategoryGrid } from '../../features/home/CategoryGrid';
@@ -17,10 +14,7 @@ import { DecisionSection, IntentBar, useToday } from '../../features/today';
 import type { IntentSnapshot } from '../../intent';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
-import { useDirections } from '../../hooks/useDirections';
-import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { analytics, surprisePlaceService } from '../../services/container';
-import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
@@ -34,8 +28,6 @@ export default function HomeScreen() {
   const [surprising, setSurprising] = useState(false);
   const [surpriseFallback, setSurpriseFallback] = useState(false);
 
-  const { status, recommended } = usePlacesQuery();
-  const directions = useDirections();
   // Intención (V5.5): estado de sesión; limpiarla restaura Today normal.
   const [intent, setIntent] = useState<IntentSnapshot | null>(null);
   // Sugerencias de hoy: contexto (V5.2) + preferencias (V5.4) + intención (V5.5).
@@ -44,17 +36,6 @@ export default function HomeScreen() {
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
   const requestingLocation = location.requestState === 'requesting';
-
-  useEffect(() => {
-    if (recommended) {
-      analytics.track({
-        eventName: 'recommendation_shown',
-        placeId: recommended.place.id,
-        category: recommended.place.category,
-        metadata: { screen: 'home' },
-      });
-    }
-  }, [recommended?.place.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitSearch = () => {
     const query = search.trim();
@@ -96,10 +77,6 @@ export default function HomeScreen() {
     } finally {
       setSurprising(false);
     }
-  };
-
-  const navigateTo = (scored: ScoredPlace) => {
-    directions.navigateTo(scored.place);
   };
 
   const cycleTheme = () => {
@@ -223,39 +200,18 @@ export default function HomeScreen() {
         {/* Panel de decisión: las 8 categorías primarias, 4×2, sobre el pliegue */}
         <CategoryGrid categories={CATEGORIES} onSelect={openCategory} />
 
-        {/* Recomendación inicial */}
-        <View style={{ gap: spacing.md }}>
-          <AppText variant="section" accessibilityRole="header">
-            {t('home.recommendedNearYou')}
-          </AppText>
-          {status === 'loading' ? <LoadingState /> : null}
-          {status === 'ready' && recommended ? (
-            <RecommendedPlaceCard
-              scored={recommended}
-              onNavigate={navigateTo}
-              onDetails={(scored) => router.push(`/place/${scored.place.id}`)}
-            />
-          ) : null}
-          {directions.failedPlace ? (
-            <NavigationErrorNotice
-              placeName={directions.failedPlace.name}
-              onRetry={directions.retry}
-              onDismiss={directions.dismiss}
-            />
-          ) : null}
-        </View>
-
         {/* Intención (V5.5): chips por contexto + entrada de texto controlada */}
         <IntentBar onIntentChange={setIntent} />
 
-        {/* Decisión (V5.6) — primario + alternativas sobre contexto (V5.2) +
-            preferencias (V5.4) + intención (V5.5) */}
+        {/* "Para ti ahora" (V5.6): ÚNICA superficie de recomendación — primario
+            con una frase de explicación + hasta dos alternativas, sobre contexto
+            (V5.2) + preferencias (V5.4) + intención (V5.5). Sin datos suficientes
+            degrada con un estado honesto en vez de ocultarse. */}
         <DecisionSection
           status={today.status}
           decision={today.decision}
           models={today.models}
           onSelect={(placeId) => router.push(`/place/${placeId}`)}
-          hideWhenEmpty
         />
 
         <AppButton

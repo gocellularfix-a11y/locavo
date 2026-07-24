@@ -14,6 +14,7 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 import { ContextBadges } from './ContextBadges';
 import { decisionReasonLabelKey, decisionRoleLabelKey, decisionTradeoffLabelKey } from './decisionLabels';
+import { buildDecisionWhyKeys, composeDecisionWhy } from './decisionWhy';
 import type { IntentTodayCardModel } from './intentToday';
 import {
   RecommendationCard,
@@ -92,7 +93,9 @@ function OptionHeader({
       <AppText variant={emphasis ? 'cardTitle' : 'label'} color={colors.brand}>
         {roleLabel}
       </AppText>
-      {reasonLabel ? (
+      {/* En el primario la frase de "por qué" es la explicación principal; el
+          caption de razón solo se muestra en las alternativas para no duplicar. */}
+      {!emphasis && reasonLabel ? (
         <AppText variant="caption" tone="secondary">
           {reasonLabel}
         </AppText>
@@ -126,6 +129,13 @@ function DecisionCard({
   onSelect: (placeId: string) => void;
 }) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
+  // Explicación del primario: UNA frase natural compuesta solo con razones
+  // reales del motor (V5.0 calidad + V5.5 intención + V5.2 contexto). Sin motor
+  // nuevo, sin recalcular nada, sin inventar calidad/precio/ambiente.
+  const whySentence = emphasis
+    ? composeDecisionWhy(buildDecisionWhyKeys(model.today.model.reasonKeys, model.today.contextBadges), t)
+    : null;
   return (
     <View
       style={{
@@ -138,6 +148,12 @@ function DecisionCard({
       }}
     >
       <OptionHeader option={option} model={model} emphasis={emphasis} />
+      {whySentence ? (
+        <AppText variant="body" tone="secondary">
+          {whySentence}
+        </AppText>
+      ) : null}
+      {/* Chips: apoyo SECUNDARIO, nunca la explicación principal. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, alignItems: 'center' }}>
         {model.intentBadgeKey ? <Chip labelKey={model.intentBadgeKey} icon="search" tone="brand" /> : null}
         {model.preferenceBadgeKey ? (

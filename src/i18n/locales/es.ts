@@ -252,7 +252,7 @@ export const es = {
   'intent.chip.NEARBY': 'Cerca',
 
   // Experiencia de decisión (V5.6)
-  'decision.section.title': 'La mejor opción para ti ahora',
+  'decision.section.title': 'Para ti ahora',
   'decision.alternatives.title': 'Otras buenas opciones',
   'decision.role.BEST_MATCH': 'Mejor opción',
   'decision.role.CLOSEST': 'Más cerca',
@@ -291,6 +291,20 @@ export const es = {
   'decision.value.yes': 'Sí',
   'decision.value.no': '—',
   'decision.empty': 'Aún no hay suficientes opciones para decidir.',
+  // Explicación del primario "Para ti ahora" (V5.6): fragmentos de razones reales
+  'decision.why.template': 'Te lo recomendamos porque {list}.',
+  'decision.why.fallback': 'Te lo recomendamos como una buena opción entre las disponibles ahora.',
+  'decision.why.openLate': 'abre hasta tarde',
+  'decision.why.mealBreakfast': 'es hora del desayuno',
+  'decision.why.mealLunch': 'es hora de comer',
+  'decision.why.mealDinner': 'es buena hora para cenar',
+  'decision.why.morning': 'va bien para la mañana',
+  'decision.why.weekend': 'es una buena opción para el fin de semana',
+  'decision.why.intentMatch': 'coincide con lo que buscas',
+  'decision.why.family': 'es buena para ir en familia',
+  'decision.why.accessible': 'es accesible',
+  'decision.why.parking': 'tiene estacionamiento',
+  'decision.why.verified': 'su información está verificada',
 
   // Detalle del lugar
   'place.directions': 'Cómo llegar',
