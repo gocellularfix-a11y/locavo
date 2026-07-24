@@ -11,7 +11,7 @@
  * la Fase B y aquí no se implementa.
  */
 import type { AcquisitionMetadata } from './acquisition';
-import type { Evidence } from './evidence';
+import type { Evidence, EvidenceBinding } from './evidence';
 import type { EvidenceSpan } from './evidenceSpan';
 import type { KnowledgeFieldKey } from './knowledgeField';
 import type { KnowledgeFragment } from './knowledgeFragment';
@@ -31,6 +31,17 @@ function orderedSpan(span: EvidenceSpan): Record<string, unknown> {
   };
 }
 
+function orderedBinding(binding: EvidenceBinding): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {
+    path: binding.path,
+    span: orderedSpan(binding.span),
+  };
+  if (binding.level !== undefined) {
+    ordered.level = binding.level;
+  }
+  return ordered;
+}
+
 function orderedEvidence(evidence: Evidence): Record<string, unknown> {
   const ordered: Record<string, unknown> = {
     level: evidence.level,
@@ -45,6 +56,12 @@ function orderedEvidence(evidence: Evidence): Record<string, unknown> {
   }
   if (evidence.span !== undefined) {
     ordered.span = orderedSpan(evidence.span);
+  }
+  if (evidence.bindings !== undefined) {
+    // Orden por ruta: la salida no depende del orden de construcción.
+    ordered.bindings = [...evidence.bindings]
+      .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+      .map(orderedBinding);
   }
   return ordered;
 }
@@ -138,26 +155,58 @@ function parseSpan(raw: unknown): EvidenceSpan | null {
   return { documentId, format, start, end, text };
 }
 
+function parseBindings(raw: unknown): readonly EvidenceBinding[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  const bindings: EvidenceBinding[] = [];
+  for (const item of raw) {
+    if (!isRecord(item) || typeof item.path !== 'string') {
+      return null;
+    }
+    const span = parseSpan(item.span);
+    if (span === null) {
+      return null;
+    }
+    bindings.push({
+      path: item.path,
+      span,
+      ...(typeof item.level === 'string' ? { level: item.level as Evidence['level'] } : {}),
+    });
+  }
+  return bindings;
+}
+
 function parseEvidence(raw: unknown): Evidence | null {
   if (!isRecord(raw)) {
     return null;
   }
-  const { level, method, capturedAt, reference, note, span } = raw;
+  const { level, method, capturedAt, reference, note, span, bindings } = raw;
   if (typeof level !== 'string' || typeof method !== 'string' || typeof capturedAt !== 'string') {
     return null;
   }
-  const evidence: Evidence = {
+  let evidence: Evidence = {
     level: level as Evidence['level'],
     method,
     capturedAt,
     ...(typeof reference === 'string' ? { reference } : {}),
     ...(typeof note === 'string' ? { note } : {}),
   };
-  if (span === undefined) {
-    return evidence;
+  if (span !== undefined) {
+    const parsedSpan = parseSpan(span);
+    if (parsedSpan === null) {
+      return null;
+    }
+    evidence = { ...evidence, span: parsedSpan };
   }
-  const parsedSpan = parseSpan(span);
-  return parsedSpan === null ? null : { ...evidence, span: parsedSpan };
+  if (bindings !== undefined) {
+    const parsedBindings = parseBindings(bindings);
+    if (parsedBindings === null) {
+      return null;
+    }
+    evidence = { ...evidence, bindings: parsedBindings };
+  }
+  return evidence;
 }
 
 function parseAcquisition(raw: unknown): AcquisitionMetadata | null {

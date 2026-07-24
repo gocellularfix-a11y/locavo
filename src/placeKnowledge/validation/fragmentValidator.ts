@@ -10,6 +10,8 @@
  * precedencia sigue siendo responsabilidad exclusiva del motor ya aprobado.
  */
 import { isExcluded, type LicenseTier } from '../../data/pipeline/licenseTier';
+import { atomicPathsOf } from '../model/atomicPath';
+import type { EvidenceSpan } from '../model/evidenceSpan';
 import { deriveKnowledgeConfidence } from '../model/confidence';
 import { EVIDENCE_LEVEL_RANK, type EvidenceLevel } from '../model/evidence';
 import type { KnowledgeFieldKey } from '../model/knowledgeField';
@@ -69,6 +71,32 @@ export interface ValidationContext {
    * corrida y la revisión nunca converge.
    */
   readonly previouslyRejected?: ReadonlySet<string>;
+}
+
+const SPAN_CODE_BY_REASON = {
+  document_unknown: 'SPAN_DOCUMENT_UNKNOWN',
+  format_mismatch: 'SPAN_FORMAT_MISMATCH',
+  range_invalid: 'SPAN_RANGE_INVALID',
+  out_of_bounds: 'SPAN_OUT_OF_BOUNDS',
+  text_mismatch: 'SPAN_TEXT_MISMATCH',
+} as const;
+
+/** Comprueba una cita y anota el hallazgo en la ruta indicada. */
+function checkSpan(
+  span: EvidenceSpan,
+  corpus: DocumentCorpus,
+  path: string,
+  issues: ValidationIssue[],
+): void {
+  const check = verifyEvidenceSpan(span, corpus);
+  if (!check.ok) {
+    issues.push({
+      code: SPAN_CODE_BY_REASON[check.reason],
+      severity: 'error',
+      path,
+      detail: { documentId: span.documentId },
+    });
+  }
 }
 
 function validateReviewHistory(history: ReviewHistory, issues: ValidationIssue[]): void {
@@ -193,35 +221,89 @@ export function validateKnowledgeFragment(
     }
   }
 
-  // ── Span: la comprobación literal contra el documento ───────────────
+  // ── Span y evidencia ATÓMICA contra el documento ────────────────────
   const restricted = fieldKnown && SPAN_REQUIRED_FIELDS.includes(fragment.field);
   const span = evidence?.span;
-  if (span === undefined) {
-    if (restricted) {
-      issues.push({
-        code: 'SPAN_REQUIRED',
-        severity: 'error',
-        path: 'evidence.span',
-        detail: { field: String(fragment.field) },
-      });
+  if (span !== undefined) {
+    checkSpan(span, corpus, 'evidence.span', issues);
+  }
+
+  const bindings = evidence?.bindings;
+  if (fieldKnown) {
+    const atoms = atomicPathsOf(fragment.field, fragment.value);
+
+    if (bindings !== undefined) {
+      const seen = new Set<string>();
+      for (let i = 0; i < bindings.length; i++) {
+        const binding = bindings[i];
+        const bindingPath = `evidence.bindings[${binding.path}]`;
+        if (!atoms.includes(binding.path)) {
+          issues.push({
+            code: 'BINDING_PATH_UNKNOWN',
+            severity: 'error',
+            path: bindingPath,
+            detail: { atomicPath: binding.path },
+          });
+          continue;
+        }
+        if (seen.has(binding.path)) {
+          issues.push({
+            code: 'BINDING_DUPLICATE',
+            severity: 'error',
+            path: bindingPath,
+            detail: { atomicPath: binding.path },
+          });
+          continue;
+        }
+        seen.add(binding.path);
+        if (
+          binding.level !== undefined &&
+          !Object.prototype.hasOwnProperty.call(EVIDENCE_LEVEL_RANK, binding.level)
+        ) {
+          issues.push({
+            code: 'BINDING_LEVEL_INVALID',
+            severity: 'error',
+            path: bindingPath,
+            detail: { level: String(binding.level) },
+          });
+        }
+        checkSpan(binding.span, corpus, bindingPath, issues);
+      }
+
+      // Cobertura: ningún átomo puede tomar prestada la cita de otro.
+      for (const atom of atoms) {
+        if (!seen.has(atom)) {
+          issues.push({
+            code: 'BINDING_MISSING',
+            severity: 'error',
+            path: `evidence.bindings[${atom}]`,
+            detail: { field: String(fragment.field), atomicPath: atom },
+          });
+        }
+      }
+    } else if (restricted) {
+      if (span === undefined) {
+        issues.push({
+          code: 'SPAN_REQUIRED',
+          severity: 'error',
+          path: 'evidence.span',
+          detail: { field: String(fragment.field) },
+        });
+      } else if (atoms.length > 1) {
+        // Un solo span NO puede respaldar varios valores independientes: se
+        // señala exactamente cuáles quedan sin evidencia propia.
+        for (const atom of atoms) {
+          issues.push({
+            code: 'BINDING_MISSING',
+            severity: 'error',
+            path: `evidence.bindings[${atom}]`,
+            detail: { field: String(fragment.field), atomicPath: atom },
+          });
+        }
+      }
     }
-  } else {
-    const check = verifyEvidenceSpan(span, corpus);
-    if (!check.ok) {
-      const CODE_BY_REASON = {
-        document_unknown: 'SPAN_DOCUMENT_UNKNOWN',
-        format_mismatch: 'SPAN_FORMAT_MISMATCH',
-        range_invalid: 'SPAN_RANGE_INVALID',
-        out_of_bounds: 'SPAN_OUT_OF_BOUNDS',
-        text_mismatch: 'SPAN_TEXT_MISMATCH',
-      } as const;
-      issues.push({
-        code: CODE_BY_REASON[check.reason],
-        severity: 'error',
-        path: 'evidence.span',
-        detail: { documentId: span.documentId },
-      });
-    }
+  } else if (span === undefined && restricted) {
+    issues.push({ code: 'SPAN_REQUIRED', severity: 'error', path: 'evidence.span' });
   }
 
   // ── Política §24: lo restringido jamás se infiere ───────────────────

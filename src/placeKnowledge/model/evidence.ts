@@ -45,8 +45,30 @@ export interface Evidence {
    * citar: una observación en campo o una captura manual no tienen span. Qué
    * campos EXIGEN span —y con qué severidad— lo decide el validador de la
    * Fase B; el modelo no impone esa política.
+   *
+   * Cubre el valor COMPLETO. Para campos multivaluados usar `bindings`: un
+   * solo span no puede respaldar varios valores independientes.
    */
   readonly span?: EvidenceSpan;
+  /**
+   * Evidencia ATÓMICA (GEN-1 · Fase D): una cita por cada valor afirmable de
+   * forma independiente. Sin esto, un elemento sin respaldo podría colarse
+   * apoyado en la cita de otro elemento de la misma lista.
+   */
+  readonly bindings?: readonly EvidenceBinding[];
+}
+
+/** Une un valor atómico concreto con la cita que lo respalda. */
+export interface EvidenceBinding {
+  /** Ruta canónica del átomo (ver `model/atomicPath.ts`). */
+  readonly path: string;
+  readonly span: EvidenceSpan;
+  /**
+   * Nivel de evidencia de ESTE átomo, si difiere del nivel del fragmento.
+   * Permite que un mismo hecho combine, por ejemplo, un dato publicado
+   * oficialmente con otro observado en campo.
+   */
+  readonly level?: EvidenceLevel;
 }
 
 export function evidenceRankOf(evidence: Evidence): number {

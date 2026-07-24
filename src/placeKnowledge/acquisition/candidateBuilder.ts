@@ -20,6 +20,7 @@ import {
   ACQUISITION_RULE_ENGINE,
   type AcquisitionMetadata,
 } from '../model/acquisition';
+import { atomicPathsOf } from '../model/atomicPath';
 import type { EvidenceLevel } from '../model/evidence';
 import type { EvidenceSpan } from '../model/evidenceSpan';
 import type { KnowledgeFieldKey } from '../model/knowledgeField';
@@ -128,6 +129,19 @@ function resolveSpan(
   };
 }
 
+/** Campos objeto cuyos subcampos se acumulan entre afirmaciones. */
+const OBJECT_MERGE_FIELDS: readonly KnowledgeFieldKey[] = [
+  'accessibility',
+  'parking',
+  'socialMedia',
+];
+
+function mergeObjectValue(previous: unknown, incoming: unknown): unknown {
+  const left = typeof previous === 'object' && previous !== null ? previous : {};
+  const right = typeof incoming === 'object' && incoming !== null ? incoming : {};
+  return { ...left, ...right };
+}
+
 function mergeListValue(previous: unknown, incoming: unknown): unknown {
   const left = Array.isArray(previous) ? previous : [];
   const right = Array.isArray(incoming) ? incoming : [incoming];
@@ -147,40 +161,63 @@ export function buildCandidates(
   const diagnostics: CandidateDiagnostic[] = [];
   const byField = new Map<
     KnowledgeFieldKey,
-    { value: unknown; span: EvidenceSpan | null; anchor: number }
+    {
+      value: unknown;
+      span: EvidenceSpan | null;
+      anchor: number;
+      /** Cita por átomo: cada valor afirmable conserva la SUYA. */
+      bindings: Map<string, EvidenceSpan>;
+    }
   >();
 
   for (const claim of claims) {
     const span = resolveSpan(context.document, claim, diagnostics);
     const anchor = span?.start ?? Number.MAX_SAFE_INTEGER;
     const existing = byField.get(claim.field);
+    const isList = LIST_FIELDS.includes(claim.field);
+    const isObject = OBJECT_MERGE_FIELDS.includes(claim.field);
 
-    if (!existing) {
-      byField.set(claim.field, {
-        value: LIST_FIELDS.includes(claim.field) ? mergeListValue([], claim.value) : claim.value,
-        span,
-        anchor,
-      });
-      continue;
-    }
+    const nextValue = !existing
+      ? isList
+        ? mergeListValue([], claim.value)
+        : claim.value
+      : isList
+        ? mergeListValue(existing.value, claim.value)
+        : isObject
+          ? mergeObjectValue(existing.value, claim.value)
+          : anchor < existing.anchor
+            ? claim.value
+            : existing.value;
 
-    if (LIST_FIELDS.includes(claim.field)) {
-      byField.set(claim.field, {
-        value: mergeListValue(existing.value, claim.value),
-        // La cita conservada es la más temprana del documento (determinista).
-        span: anchor < existing.anchor ? span : existing.span,
-        anchor: Math.min(anchor, existing.anchor),
-      });
-    } else {
+    if (existing && !isList && !isObject) {
       diagnostics.push({
         field: String(claim.field),
         code: 'DUPLICATE_SCALAR_CLAIM',
         quote: claim.quote,
       });
-      if (anchor < existing.anchor) {
-        byField.set(claim.field, { value: claim.value, span, anchor });
+    }
+
+    const bindings = existing?.bindings ?? new Map<string, EvidenceSpan>();
+    if (span) {
+      // Las rutas se derivan de la forma que el campo tendrá realmente: en una
+      // lista, la afirmación llega como átomo suelto ('wifi') pero el hecho
+      // guarda ['wifi'], y ambas deben producir la misma ruta.
+      const shaped = isList ? mergeListValue([], claim.value) : claim.value;
+      // Cada átomo que ESTA afirmación introduce queda ligado a SU cita; nunca
+      // hereda la de otro valor.
+      for (const path of atomicPathsOf(claim.field, shaped)) {
+        if (!bindings.has(path)) {
+          bindings.set(path, span);
+        }
       }
     }
+
+    byField.set(claim.field, {
+      value: nextValue,
+      span: !existing || anchor < existing.anchor ? (span ?? existing?.span ?? null) : existing.span,
+      anchor: Math.min(anchor, existing?.anchor ?? Number.MAX_SAFE_INTEGER),
+      bindings,
+    });
   }
 
   const acquisition: AcquisitionMetadata = {
@@ -214,6 +251,13 @@ export function buildCandidates(
         capturedAt: context.capturedAt,
         reference: context.document.id,
         ...(entry.span ? { span: entry.span } : {}),
+        ...(entry.bindings.size > 0
+          ? {
+              bindings: [...entry.bindings.entries()]
+                .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+                .map(([path, span]) => ({ path, span })),
+            }
+          : {}),
       },
       retrievedAt: context.retrievedAt,
       licenseTier: context.licenseTier,

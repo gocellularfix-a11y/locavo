@@ -42,6 +42,11 @@ export type ValidationErrorCode =
   | 'SPAN_RANGE_INVALID'
   | 'SPAN_OUT_OF_BOUNDS'
   | 'SPAN_TEXT_MISMATCH'
+  // Evidencia atómica: una cita por valor afirmable independientemente
+  | 'BINDING_PATH_UNKNOWN'
+  | 'BINDING_DUPLICATE'
+  | 'BINDING_MISSING'
+  | 'BINDING_LEVEL_INVALID'
   // Procedencia y licencia
   | 'SOURCE_UNKNOWN'
   | 'LICENSE_TIER_INVALID'
@@ -84,6 +89,10 @@ export const VALIDATION_CODE_ORDER: readonly ValidationErrorCode[] = [
   'SPAN_RANGE_INVALID',
   'SPAN_OUT_OF_BOUNDS',
   'SPAN_TEXT_MISMATCH',
+  'BINDING_PATH_UNKNOWN',
+  'BINDING_DUPLICATE',
+  'BINDING_MISSING',
+  'BINDING_LEVEL_INVALID',
   'SOURCE_UNKNOWN',
   'LICENSE_TIER_INVALID',
   'LICENSE_EXCLUDED',

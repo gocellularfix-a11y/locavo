@@ -28,6 +28,11 @@ import {
   type RawDocument,
 } from './documentIngestion';
 import { selectProvider, type ProviderRegistry, type ProviderSelection } from './providerRegistry';
+import {
+  resolveSourceBindings,
+  type AcquisitionManifest,
+  type BindingIssue,
+} from './sourceBinding';
 import { selectPrompt, type PromptRegistry } from './promptRegistry';
 import type { ExtractionProvider } from './providerModel';
 import { withRetry, type RetryPolicy } from './retryPolicy';
@@ -56,12 +61,21 @@ export interface AcquisitionRunInput {
   readonly ingestion?: IngestionOptions;
   readonly previouslyRejected?: ReadonlySet<string>;
   readonly requireAcceptedReview?: boolean;
+  /**
+   * Manifiesto de atribución. Cuando se aporta, TODO documento necesita una
+   * ligadura válida y la ligadura MANDA sobre lo declarado en el objetivo:
+   * la fuente, la licencia y el nivel de evidencia salen de ella. Sin
+   * manifiesto se conserva el comportamiento de la Fase C.
+   */
+  readonly manifest?: AcquisitionManifest;
 }
 
 export type AcquisitionFailureCode =
   | 'DOCUMENT_REJECTED'
   | 'NO_PROVIDER_AVAILABLE'
-  | 'PROVIDER_FAILED';
+  | 'PROVIDER_FAILED'
+  /** El documento no tiene una ligadura de fuente que autorice su uso. */
+  | 'BINDING_REJECTED';
 
 export interface AcquisitionFailure {
   readonly placeId: string;
@@ -84,6 +98,8 @@ export interface AcquisitionReport {
   readonly byProvider: readonly { readonly providerId: string; readonly candidates: number }[];
   readonly diagnostics: readonly CandidateDiagnostic[];
   readonly failures: readonly AcquisitionFailure[];
+  /** Hallazgos de atribución; vacío cuando no se aportó manifiesto. */
+  readonly bindingIssues: readonly BindingIssue[];
 }
 
 export interface AcquisitionRunResult {
@@ -122,6 +138,8 @@ export async function runAcquisition(
   const failures: AcquisitionFailure[] = [];
   const perProvider = new Map<string, number>();
 
+  // ── Paso 1: ingesta ─────────────────────────────────────────────────
+  const ingestedTargets: { target: AcquisitionTarget; document: EvidenceDocument }[] = [];
   for (const target of input.targets) {
     const ingested = ingestDocument(target.document, input.ingestion);
     if (!ingested.ok) {
@@ -133,8 +151,33 @@ export async function runAcquisition(
       });
       continue;
     }
-    const document = ingested.document;
-    documents.push(document);
+    documents.push(ingested.document);
+    ingestedTargets.push({ target, document: ingested.document });
+  }
+
+  // ── Paso 2: atribución auditable ────────────────────────────────────
+  // Con manifiesto, ningún documento sin ligadura válida autoriza conocimiento.
+  const binding = input.manifest
+    ? resolveSourceBindings(input.manifest, documents, input.sources)
+    : null;
+  const bindingIssues = binding?.issues ?? [];
+
+  // ── Paso 3: extracción por objetivo autorizado ──────────────────────
+  for (const { target, document } of ingestedTargets) {
+    const authorized = binding?.authorized.get(document.id);
+    if (binding && !authorized) {
+      failures.push({
+        placeId: target.placeId,
+        documentId: document.id,
+        code: 'BINDING_REJECTED',
+        detail: 'sin ligadura de fuente válida',
+      });
+      continue;
+    }
+    // La ligadura manda sobre lo declarado en el objetivo.
+    const sourceId = authorized?.sourceId ?? target.sourceId;
+    const licenseTier = authorized?.licenseTier ?? target.licenseTier;
+    const evidenceLevel = authorized?.declaredEvidenceLevel ?? target.evidenceLevel;
 
     const request = { placeId: target.placeId, document, fields: input.fields };
     const provider: ExtractionProvider | null = selectProvider(
@@ -172,9 +215,9 @@ export async function runAcquisition(
       document,
       provider,
       prompt,
-      sourceId: target.sourceId,
-      licenseTier: target.licenseTier,
-      evidenceLevel: target.evidenceLevel,
+      sourceId,
+      licenseTier,
+      evidenceLevel,
       capturedAt: target.capturedAt,
       retrievedAt: input.retrievedAt,
     });
@@ -228,6 +271,7 @@ export async function runAcquisition(
         .map(([providerId, count]) => ({ providerId, candidates: count })),
       diagnostics,
       failures,
+      bindingIssues,
     },
   };
 }
@@ -258,6 +302,21 @@ export function serializeAcquisitionReport(report: AcquisitionReport): string {
       documentId: entry.documentId,
       code: entry.code,
       detail: entry.detail,
+    })),
+    bindingIssues: report.bindingIssues.map((entry) => ({
+      code: entry.code,
+      severity: entry.severity,
+      documentId: entry.documentId,
+      ...(entry.detail !== undefined
+        ? {
+            detail: Object.keys(entry.detail)
+              .sort()
+              .reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = entry.detail![key];
+                return acc;
+              }, {}),
+          }
+        : {}),
     })),
   });
 }

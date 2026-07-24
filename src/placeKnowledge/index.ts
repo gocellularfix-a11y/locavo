@@ -22,4 +22,5 @@ export * from './model/review';
 export * from './model/serialization';
 export * from './model/source';
 export * from './acquisition';
+export * from './enrichment';
 export * from './validation';
