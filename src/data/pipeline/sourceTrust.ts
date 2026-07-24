@@ -16,6 +16,15 @@ const TRUST_RANK: Readonly<Record<VerificationLevel, number>> = {
   unverified: 1,
 };
 
+/**
+ * Rango de un nivel de verificación. Escala ÚNICA de autoridad de Locavo,
+ * reutilizable fuera del pipeline (p. ej. Place Knowledge Engine) para no
+ * duplicar calibraciones.
+ */
+export function trustRankOfLevel(level: VerificationLevel): number {
+  return TRUST_RANK[level];
+}
+
 export function trustRankOf(descriptor: ProviderDescriptor | undefined): number {
-  return descriptor ? TRUST_RANK[descriptor.verificationLevel] : 0;
+  return descriptor ? trustRankOfLevel(descriptor.verificationLevel) : 0;
 }
