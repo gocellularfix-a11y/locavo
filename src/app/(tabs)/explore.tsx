@@ -19,6 +19,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { useSearchQuery } from '../../hooks/useSearchQuery';
+import { routeSearch, type IntentLanguage } from '../../intentEngine';
 import { analytics } from '../../services/container';
 import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
@@ -28,6 +29,15 @@ import { radii, spacing } from '../../theme/tokens';
 
 /** Máximo de marcadores simultáneos en el mapa (tope V4D.1). */
 const MAX_MAP_MARKERS = 200;
+
+/**
+ * El Intent Engine soporta en/es/pt; el resto de locales no aporta pista de
+ * idioma. La pista solo desempata entre diccionarios: nunca cambia la intención
+ * detectada ni bloquea la búsqueda.
+ */
+function intentLocaleHint(locale: string): IntentLanguage | undefined {
+  return locale === 'en' || locale === 'es' || locale === 'pt' ? locale : undefined;
+}
 
 /**
  * Ajustes de virtualización (V4D.2), medidos sobre tarjetas de ~150–170 px
@@ -86,7 +96,7 @@ function FilterChip({ label, active, onPress, activeColor, activeTextColor }: Fi
 export default function ExploreScreen() {
   const router = useRouter();
   const { colors, scheme } = useAppTheme();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const location = useLocationState();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ category?: string; q?: string }>();
@@ -241,11 +251,24 @@ export default function ExploreScreen() {
         value={query}
         onChangeText={search.setQuery}
         onSubmit={() => {
-          search.submit(); // ejecuta ya, sin esperar el debounce
-          if (query.trim()) {
+          const raw = query.trim();
+          if (!raw) {
+            search.submit();
+            return;
+          }
+          // Intent Engine (determinista): "tengo hambre" → categoría food.
+          const route = routeSearch(raw, intentLocaleHint(locale));
+          if (route.kind === 'decision') {
+            // Intención reconocida con categoría Locavo → Decision Mode.
+            search.clear();
+            setCategory(route.category);
+            analytics.track({ eventName: 'category_selected', category: route.category });
+          } else {
+            // Sin intención accionable → búsqueda universal (nunca bloquea).
+            search.submit(); // ejecuta ya, sin esperar el debounce
             analytics.track({
               eventName: 'search_submitted',
-              metadata: { queryLength: query.trim().length, screen: 'explore' },
+              metadata: { queryLength: raw.length, screen: 'explore' },
             });
           }
         }}
