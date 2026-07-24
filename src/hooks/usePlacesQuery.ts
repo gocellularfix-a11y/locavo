@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CategoryId } from '../domain/place';
+import { effectiveSearchCategory } from '../domain/searchMode';
 import type { SearchIntent } from '../domain/searchIntent';
 import { placeSearchService } from '../services/container';
 import type { ScoredPlace } from '../services/places/PlaceRankingService';
@@ -57,6 +58,11 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
   const { coords } = useLocationState();
   const { category = null, query = '', openOnly = false, sort = 'best' } = options;
 
+  // Búsqueda UNIVERSAL: con texto, la categoría deja de filtrar (Search Mode);
+  // sin texto se respeta la categoría (Decision Mode). El estado `category` del
+  // consumidor se conserva para restaurar la navegación al limpiar el texto.
+  const activeCategory = effectiveSearchCategory(category, query);
+
   const [results, setResults] = useState<ScoredPlace[]>([]);
   const [status, setStatus] = useState<QueryStatus>('loading');
   const [loadingMore, setLoadingMore] = useState(false);
@@ -72,7 +78,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
     placeSearchService
       .search({
         origin: coords,
-        category,
+        category: activeCategory,
         text: query,
         openNow: openOnly,
         sort,
@@ -96,7 +102,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
     return () => {
       cancelled = true;
     };
-  }, [coords, category, query, openOnly, sort, reloadToken]);
+  }, [coords, activeCategory, query, openOnly, sort, reloadToken]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadingMore || status !== 'ready') {
@@ -107,7 +113,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
     placeSearchService
       .search({
         origin: coords,
-        category,
+        category: activeCategory,
         text: query,
         openNow: openOnly,
         sort,
@@ -125,7 +131,7 @@ export function usePlacesQuery(options: PlacesQueryOptions = {}): PlacesQueryRes
           setLoadingMore(false);
         }
       });
-  }, [nextCursor, loadingMore, status, coords, category, query, openOnly, sort]);
+  }, [nextCursor, loadingMore, status, coords, activeCategory, query, openOnly, sort]);
 
   const reload = useCallback(() => {
     setStatus('loading');

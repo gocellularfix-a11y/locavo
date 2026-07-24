@@ -84,6 +84,10 @@ export const zhCN: TranslationCatalog = {
   'explore.emptyGeneric': '试试其他类别或更改搜索内容。',
   'explore.removeFilter': '取消筛选',
   'explore.seeAll': '查看全部',
+  'explore.searchGlobalPlaceholder': '搜索咖啡、玉米卷、沃尔玛…',
+  'explore.searchScope': '搜索全城所有地点',
+  'explore.emptySearchTitle': '未找到匹配',
+  'explore.emptySearchBody': '没有与「{query}」匹配的地点。搜索覆盖全城，换个拼写或关键词试试。',
   'explore.loadMore': '加载更多地点',
   'explore.loadMoreHint': '加载下一页结果',
 

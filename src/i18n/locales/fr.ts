@@ -87,6 +87,10 @@ export const fr: TranslationCatalog = {
   'explore.emptyGeneric': 'Essayez une autre catégorie ou modifiez votre recherche.',
   'explore.removeFilter': 'Retirer le filtre',
   'explore.seeAll': 'Tout voir',
+  'explore.searchGlobalPlaceholder': 'Cherchez café, tacos, Walmart…',
+  'explore.searchScope': 'Recherche dans toute la ville',
+  'explore.emptySearchTitle': 'Aucun lieu trouvé',
+  'explore.emptySearchBody': 'Rien pour « {query} ». La recherche couvre toute la ville — essayez une autre orthographe ou un autre mot.',
   'explore.loadMore': 'Charger plus de lieux',
   'explore.loadMoreHint': 'Charge la page de résultats suivante',
 

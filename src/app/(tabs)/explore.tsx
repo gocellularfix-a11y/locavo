@@ -13,10 +13,12 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { SearchField } from '../../components/SearchField';
 import { CATEGORIES, categoryLabelKey, isCategoryId } from '../../domain/categories';
 import type { CategoryId } from '../../domain/place';
+import { searchModeOf } from '../../domain/searchMode';
 import { MapSurface } from '../../features/map/MapSurface';
 import { useI18n } from '../../i18n/I18nContext';
 import { useDirections } from '../../hooks/useDirections';
 import { usePlacesQuery } from '../../hooks/usePlacesQuery';
+import { useSearchQuery } from '../../hooks/useSearchQuery';
 import { analytics } from '../../services/container';
 import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
@@ -94,7 +96,8 @@ export default function ExploreScreen() {
   const paramQuery = typeof params.q === 'string' ? params.q : '';
 
   const [category, setCategory] = useState<CategoryId | null>(paramCategory);
-  const [query, setQuery] = useState(paramQuery);
+  const search = useSearchQuery(paramQuery);
+  const { query, activeQuery } = search;
   const [openOnly, setOpenOnly] = useState(false);
   const [sortByDistance, setSortByDistance] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -112,14 +115,15 @@ export default function ExploreScreen() {
   if (paramQuery !== lastParamQuery) {
     setLastParamQuery(paramQuery);
     if (paramQuery) {
-      setQuery(paramQuery);
+      search.setQuery(paramQuery);
     }
   }
 
   const { status, results, recommended, reload, hasMore, loadingMore, loadMore, notice } =
     usePlacesQuery({
       category,
-      query,
+      // Consulta con debounce; búsqueda universal (la categoría no filtra con texto).
+      query: activeQuery,
       openOnly,
       sort: sortByDistance ? 'distance' : 'best',
     });
@@ -150,7 +154,11 @@ export default function ExploreScreen() {
 
   const locationLabel =
     location.source === 'gps' ? t('location.current') : location.manualLocation.label;
+  // Con texto activo estamos en Search Mode (global): la categoría no filtra y
+  // el encabezado refleja la búsqueda, no la categoría previa.
+  const searchActive = searchModeOf(activeQuery) === 'search';
   const categoryLabel = category ? t(categoryLabelKey(category)) : t('explore.allPlaces');
+  const headerTitle = searchActive ? activeQuery.trim() : categoryLabel;
   const isWide = width >= 900;
 
   const directions = useDirections();
@@ -219,18 +227,21 @@ export default function ExploreScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <AppText variant="section" accessibilityRole="header" numberOfLines={1}>
-            {categoryLabel}
+            {headerTitle}
           </AppText>
-          <AppText variant="caption" tone="secondary">
-            {t('explore.locationLine', { label: locationLabel })}
+          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            {searchActive
+              ? t('explore.searchScope')
+              : t('explore.locationLine', { label: locationLabel })}
           </AppText>
         </View>
       </View>
 
       <SearchField
         value={query}
-        onChangeText={setQuery}
+        onChangeText={search.setQuery}
         onSubmit={() => {
+          search.submit(); // ejecuta ya, sin esperar el debounce
           if (query.trim()) {
             analytics.track({
               eventName: 'search_submitted',
@@ -238,11 +249,7 @@ export default function ExploreScreen() {
             });
           }
         }}
-        placeholder={
-          category
-            ? t('explore.searchInCategory', { category: categoryLabel.toLowerCase() })
-            : undefined
-        }
+        placeholder={t('explore.searchGlobalPlaceholder')}
       />
 
       {/* Aviso truthful: horarios no confirmados ante intención de "abierto". */}
@@ -276,10 +283,16 @@ export default function ExploreScreen() {
             <FilterChip
               key={c.id}
               label={t(categoryLabelKey(c.id))}
-              active={category === c.id}
+              // Con texto activo la categoría no filtra: el chip no se muestra
+              // activo aunque su estado se conserve para restaurar al limpiar.
+              active={category === c.id && !searchActive}
               activeColor={visual.solid}
               activeTextColor={visual.onSolid}
               onPress={() => {
+                // Elegir categoría es Decision Mode: limpia cualquier texto activo.
+                if (searchActive) {
+                  search.clear();
+                }
                 const next = category === c.id ? null : c.id;
                 setCategory(next);
                 if (next) {
@@ -327,6 +340,15 @@ export default function ExploreScreen() {
       <LoadingState />
     ) : status === 'error' ? (
       <ErrorState onRetry={reload} />
+    ) : searchActive ? (
+      // Búsqueda global sin coincidencias: NUNCA insinúa que se limitó a una
+      // categoría; deja claro que la búsqueda cubre toda la ciudad.
+      <EmptyState
+        title={t('explore.emptySearchTitle')}
+        message={t('explore.emptySearchBody', { query: activeQuery.trim() })}
+        actionLabel={t('search.clear')}
+        onAction={() => search.clear()}
+      />
     ) : (
       <EmptyState
         title={t('explore.emptyTitle')}
@@ -335,7 +357,7 @@ export default function ExploreScreen() {
         onAction={() => {
           setOpenOnly(false);
           setCategory(null);
-          setQuery('');
+          search.clear();
         }}
       />
     );

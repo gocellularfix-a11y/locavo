@@ -98,6 +98,10 @@ export const es = {
   'explore.emptyGeneric': 'Prueba con otra categoría o cambia tu búsqueda.',
   'explore.removeFilter': 'Quitar filtro',
   'explore.seeAll': 'Ver todo',
+  'explore.searchGlobalPlaceholder': 'Busca café, tacos, Walmart…',
+  'explore.searchScope': 'Buscando en toda la ciudad',
+  'explore.emptySearchTitle': 'Sin coincidencias',
+  'explore.emptySearchBody': 'No encontramos lugares para «{query}». La búsqueda cubre toda la ciudad; prueba otra palabra u ortografía.',
   'explore.loadMore': 'Cargar más lugares',
   'explore.loadMoreHint': 'Carga la siguiente página de resultados',
 
