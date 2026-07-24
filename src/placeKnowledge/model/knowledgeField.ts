@@ -12,6 +12,7 @@
  */
 import type { CategoryId, OpeningHours } from '../../domain/place';
 import type { LocalizedText } from '../../domain/places/LocalizedText';
+import type { HoursException } from './hoursException';
 
 /** Plataforma social (cadena abierta; constantes canónicas abajo). */
 export type SocialPlatform = string;
@@ -35,6 +36,21 @@ export const SERVICE_DINE_IN: ServiceTag = 'dine_in';
 export const SERVICE_RESERVATIONS: ServiceTag = 'reservations';
 export const SERVICE_WIFI: ServiceTag = 'wifi';
 export const SERVICE_DRIVE_THRU: ServiceTag = 'drive_thru';
+export const SERVICE_OUTDOOR_SEATING: ServiceTag = 'outdoor_seating';
+export const SERVICE_FAMILY_FRIENDLY: ServiceTag = 'family_friendly';
+export const SERVICE_PET_FRIENDLY: ServiceTag = 'pet_friendly';
+
+/** Producto o especialidad ofrecida (cadena abierta, normalizada). */
+export type ProductTag = string;
+
+/** Naturaleza del negocio (cadena abierta; constantes canónicas abajo). */
+export type BusinessType = string;
+
+export const BUSINESS_TYPE_FAMILY_OWNED: BusinessType = 'family_owned';
+export const BUSINESS_TYPE_INDEPENDENT: BusinessType = 'independent';
+export const BUSINESS_TYPE_FRANCHISE: BusinessType = 'franchise';
+export const BUSINESS_TYPE_CHAIN: BusinessType = 'chain';
+export const BUSINESS_TYPE_COOPERATIVE: BusinessType = 'cooperative';
 
 /** Método de pago (cadena abierta; constantes canónicas abajo). */
 export type PaymentMethod = string;
@@ -86,6 +102,15 @@ export interface KnowledgeFieldValueMap {
   readonly extraCategories: readonly CategoryId[];
   /** Descripción localizable; el texto original jamás se sobrescribe. */
   readonly description: LocalizedText;
+  /** Idiomas de atención al público (BCP-47, p. ej. 'es-MX', 'en'). */
+  readonly languages: readonly string[];
+  /** Productos o especialidades declarados por la fuente. */
+  readonly products: readonly ProductTag[];
+  readonly businessType: BusinessType;
+  /** Año de fundación declarado por la fuente (nunca estimado). */
+  readonly establishedYear: number;
+  /** Cierres temporales y horarios de días festivos. */
+  readonly hoursExceptions: readonly HoursException[];
 }
 
 export type KnowledgeFieldKey = keyof KnowledgeFieldValueMap;
@@ -110,6 +135,11 @@ const KNOWLEDGE_FIELD_CATALOG: Readonly<Record<KnowledgeFieldKey, true>> = {
   parking: true,
   extraCategories: true,
   description: true,
+  languages: true,
+  products: true,
+  businessType: true,
+  establishedYear: true,
+  hoursExceptions: true,
 };
 
 /** Orden canónico y completo del catálogo (validado por test). */

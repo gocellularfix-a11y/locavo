@@ -39,7 +39,31 @@ describe('PKE-0 field catalog', () => {
       'parking',
       'extraCategories',
       'description',
+      // GEN-1 · Fase A: crecimiento ADITIVO del catálogo.
+      'languages',
+      'products',
+      'businessType',
+      'establishedYear',
+      'hoursExceptions',
     ]);
+  });
+
+  it('el crecimiento del catálogo es aditivo: los campos de PKE-0 siguen presentes', () => {
+    for (const original of [
+      'hours',
+      'phones',
+      'website',
+      'email',
+      'socialMedia',
+      'services',
+      'paymentMethods',
+      'accessibility',
+      'parking',
+      'extraCategories',
+      'description',
+    ]) {
+      expect(KNOWLEDGE_FIELD_KEYS).toContain(original);
+    }
   });
 });
 
@@ -176,6 +200,8 @@ describe('PKE-0 fragments', () => {
   });
 
   it('pins the knowledge schema version', () => {
-    expect(KNOWLEDGE_SCHEMA_VERSION).toBe(1);
+    // v2: GEN-1 · Fase A añadió adquisición, versión de validador, historial de
+    // revisión y span de evidencia.
+    expect(KNOWLEDGE_SCHEMA_VERSION).toBe(2);
   });
 });

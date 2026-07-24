@@ -8,12 +8,21 @@
  * recomputable.
  */
 import type { LicenseTier } from '../../data/pipeline/licenseTier';
+import type { AcquisitionMetadata } from './acquisition';
 import type { Evidence } from './evidence';
+import type { ReviewHistory } from './review';
 import type { KnowledgeFieldKey, KnowledgeFieldValueMap } from './knowledgeField';
 import type { KnowledgeSourceId } from './source';
 
-/** Versión del esquema de conocimiento (fragmentos y proyecciones la portan). */
-export const KNOWLEDGE_SCHEMA_VERSION = 1;
+/**
+ * Versión del esquema de conocimiento (fragmentos y proyecciones la portan).
+ *
+ * v2 (GEN-1 · Fase A): incorpora `acquisition`, `validatorVersion`,
+ * `reviewHistory` y el span de evidencia. El crecimiento aditivo del catálogo
+ * de campos NO sube esta versión; cambiar el significado de un campo, un rango
+ * o la regla de precedencia, sí.
+ */
+export const KNOWLEDGE_SCHEMA_VERSION = 2;
 
 export interface KnowledgeFragment<K extends KnowledgeFieldKey = KnowledgeFieldKey> {
   /** Id determinista del fragmento: ver `knowledgeFragmentIdOf`. */
@@ -34,6 +43,17 @@ export interface KnowledgeFragment<K extends KnowledgeFieldKey = KnowledgeFieldK
   readonly licenseTier: LicenseTier;
   /** Id del fragmento que este corrige/reemplaza (cadena de versiones auditable). */
   readonly supersedes?: string;
+
+  /** CÓMO se obtuvo el hecho, con independencia de la tecnología usada. */
+  readonly acquisition: AcquisitionMetadata;
+  /**
+   * Versión del validador que admitió el fragmento. Permite reevaluar en
+   * bloque lo aceptado por una versión concreta. El validador se implementa en
+   * la Fase B; aquí solo se registra el campo.
+   */
+  readonly validatorVersion: string;
+  /** Secuencia inmutable de decisiones humanas; vacía = aún sin revisar. */
+  readonly reviewHistory: ReviewHistory;
 }
 
 /**
