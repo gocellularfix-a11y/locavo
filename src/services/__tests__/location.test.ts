@@ -1,10 +1,4 @@
-import {
-  DEFAULT_MANUAL_LOCATION,
-  MANUAL_LOCATIONS,
-  readCurrentLocation,
-  resolveManualLocation,
-  type LocationApi,
-} from '../location';
+import { readCurrentLocation, type LocationApi } from '../location';
 
 function makeApi(overrides: Partial<LocationApi> = {}): LocationApi {
   return {
@@ -80,27 +74,7 @@ describe('readCurrentLocation', () => {
   });
 });
 
-describe('resolveManualLocation', () => {
-  it('resuelve un id válido', () => {
-    expect(resolveManualLocation('tres-rios').id).toBe('tres-rios');
-  });
-
-  it('id desconocido u obsoleto → default (Centro)', () => {
-    expect(resolveManualLocation('zona-que-ya-no-existe')).toBe(DEFAULT_MANUAL_LOCATION);
-  });
-
-  it('valores corruptos → default', () => {
-    expect(resolveManualLocation(null)).toBe(DEFAULT_MANUAL_LOCATION);
-    expect(resolveManualLocation(42)).toBe(DEFAULT_MANUAL_LOCATION);
-    expect(resolveManualLocation({ id: 'centro' })).toBe(DEFAULT_MANUAL_LOCATION);
-  });
-
-  it('todas las zonas manuales están en Culiacán con coordenadas válidas', () => {
-    for (const manual of MANUAL_LOCATIONS) {
-      expect(Math.abs(manual.coords.latitude - 24.8)).toBeLessThan(0.2);
-      expect(Math.abs(manual.coords.longitude - -107.4)).toBeLessThan(0.2);
-    }
-  });
-});
+// La resolución de zona manual y de ubicación efectiva se prueba en
+// `effectiveLocation.test.ts` (fuente canónica única).
 
 // Los mensajes humanos de falla se prueban en i18n/__tests__/format.test.ts.

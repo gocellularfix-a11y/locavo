@@ -453,6 +453,7 @@ export const it: TranslationCatalog = {
   'format.distanceFromOrigin': '{distance} {origin}',
   'distance.fromYourLocation': 'dalla tua posizione',
   'distance.fromSelected': 'dalla posizione selezionata',
+  'distance.fromCityCenter': 'dal centro città',
   'distance.from': 'da {location}',
   'format.travelTime': 'Circa {min} min',
 };

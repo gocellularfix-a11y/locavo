@@ -21,6 +21,7 @@ import { usePlacesQuery } from '../../hooks/usePlacesQuery';
 import { useSearchQuery } from '../../hooks/useSearchQuery';
 import { routeSearch, type IntentLanguage } from '../../intentEngine';
 import { analytics } from '../../services/container';
+import { ACTIVE_CITY } from '../../services/effectiveLocation';
 import type { ScoredPlace } from '../../services/places/PlaceRankingService';
 import { useLocationState } from '../../state/LocationContext';
 import { getCategoryVisual } from '../../theme/categoryColors';
@@ -162,8 +163,9 @@ export default function ExploreScreen() {
     [results],
   );
 
+  // Referencia realmente usada: GPS, zona elegida o centro de la ciudad activa.
   const locationLabel =
-    location.source === 'gps' ? t('location.current') : location.manualLocation.label;
+    location.source === 'gps' ? t('location.current') : (location.label ?? ACTIVE_CITY.label);
   // Con texto activo estamos en Search Mode (global): la categoría no filtra y
   // el encabezado refleja la búsqueda, no la categoría previa.
   const searchActive = searchModeOf(activeQuery) === 'search';

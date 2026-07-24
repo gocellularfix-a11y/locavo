@@ -482,6 +482,7 @@ export const es = {
   'format.distanceFromOrigin': '{distance} {origin}',
   'distance.fromYourLocation': 'desde tu ubicación',
   'distance.fromSelected': 'desde la ubicación seleccionada',
+  'distance.fromCityCenter': 'desde el centro de la ciudad',
   'distance.from': 'desde {location}',
 } as const;
 

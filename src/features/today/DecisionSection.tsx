@@ -8,7 +8,7 @@ import { categoryLabelKey } from '../../domain/categories';
 import { formatDistanceLocalized, formatDistanceWithOriginLocalized } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import type { TranslationKey } from '../../i18n/locales/es';
-import type { DistanceOrigin } from '../../services/location';
+import type { DistanceOrigin } from '../../services/effectiveLocation';
 import { useDistanceOrigin } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';

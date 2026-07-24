@@ -11,7 +11,8 @@ import {
   type PriceLevel,
 } from '../domain/places/LocavoPlace';
 import type { RecommendationReason } from '../services/places/PlaceRankingService';
-import type { DistanceOrigin, LocationFailureReason } from '../services/location';
+import type { DistanceOrigin } from '../services/effectiveLocation';
+import type { LocationFailureReason } from '../services/location';
 
 /**
  * Formato local (V3): fechas, horas, distancias y textos derivados de datos
@@ -62,15 +63,24 @@ export function formatTravelTimeLocalized(minutes: number, locale: SupportedLoca
   return translateIn(locale, 'format.travelTime', { min: minutes });
 }
 
-/** Frase de ORIGEN ("desde tu ubicación" / "desde {zona}" / "desde la ubicación seleccionada"). */
+/**
+ * Frase de ORIGEN ("desde tu ubicación" / "desde {zona o ciudad}" / "desde la
+ * ubicación seleccionada"). Solo el origen `gps` puede decir "tu ubicación": el
+ * respaldo de ciudad se nombra explícitamente y jamás se presenta como una
+ * selección del usuario.
+ */
 export function distanceOriginPhrase(origin: DistanceOrigin, locale: SupportedLocale): string {
   if (origin.type === 'gps') {
     return translateIn(locale, 'distance.fromYourLocation');
   }
   const label = origin.label?.trim();
-  return label
-    ? translateIn(locale, 'distance.from', { location: label })
-    : translateIn(locale, 'distance.fromSelected');
+  if (label) {
+    return translateIn(locale, 'distance.from', { location: label });
+  }
+  return translateIn(
+    locale,
+    origin.type === 'city' ? 'distance.fromCityCenter' : 'distance.fromSelected',
+  );
 }
 
 /**

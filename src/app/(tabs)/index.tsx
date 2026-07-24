@@ -15,6 +15,7 @@ import type { IntentSnapshot } from '../../intent';
 import { locationFailureText } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import { analytics, surprisePlaceService } from '../../services/container';
+import { ACTIVE_CITY } from '../../services/effectiveLocation';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
@@ -33,8 +34,10 @@ export default function HomeScreen() {
   // Sugerencias de hoy: contexto (V5.2) + preferencias (V5.4) + intención (V5.5).
   const today = useToday({ origin: location.coords, intent });
 
+  // Etiqueta honesta de la referencia realmente usada: GPS, zona elegida o
+  // centro de la ciudad activa (respaldo). Nunca se anuncia GPS sin GPS.
   const locationLabel =
-    location.source === 'gps' ? t('location.current') : location.manualLocation.label;
+    location.source === 'gps' ? t('location.current') : (location.label ?? ACTIVE_CITY.label);
   const requestingLocation = location.requestState === 'requesting';
 
   const submitSearch = () => {
@@ -141,10 +144,10 @@ export default function HomeScreen() {
                 {t('home.locationLine', { label: locationLabel })}
               </AppText>
             </Pressable>
-            {location.source === 'manual' ? (
+            {location.source !== 'gps' ? (
               <Pressable
                 onPress={() => {
-                  location.useCurrentLocation();
+                  location.requestCurrentLocation();
                 }}
                 disabled={requestingLocation}
                 accessibilityRole="button"
@@ -182,7 +185,11 @@ export default function HomeScreen() {
               accessibilityRole="alert"
               accessibilityLiveRegion="polite"
             >
-              {locationFailureText(location.failureReason, location.manualLocation.label, locale)}
+              {locationFailureText(
+                location.failureReason,
+                location.label ?? ACTIVE_CITY.label,
+                locale,
+              )}
             </AppText>
           ) : null}
         </View>

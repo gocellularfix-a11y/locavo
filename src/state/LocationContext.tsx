@@ -5,40 +5,49 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
 import type { Coordinates } from '../domain/place';
 import {
-  DEFAULT_MANUAL_LOCATION,
   distanceOriginOf,
-  readCurrentLocation,
+  resolveEffectiveLocation,
   resolveManualLocation,
   type DistanceOrigin,
-  type LocationFailureReason,
+  type EffectiveLocationSource,
   type ManualLocation,
-} from '../services/location';
+} from '../services/effectiveLocation';
+import { readCurrentLocation, type LocationFailureReason } from '../services/location';
 
 /**
- * Estado global mínimo de ubicación.
+ * Estado global de ubicación: ÚNICA fuente de coordenadas de la app.
  *
- * Siempre hay coordenadas utilizables: si no hay permiso o falla el GPS,
- * se usa la ubicación manual (demo) seleccionada, por defecto el Centro
- * de Culiacán. Solo se persiste el id de la zona manual; nunca coordenadas
- * del usuario.
+ * Aplica la resolución canónica (`resolveEffectiveLocation`): GPS válido →
+ * ubicación manual → centro de la ciudad activa. El GPS se intenta UNA vez al
+ * arrancar, así un usuario con ubicación disponible obtiene distancias reales
+ * sin tener que pedirlo; si se niega o falla, la cadena degrada de forma
+ * honesta y el origen mostrado lo refleja (nunca se finge GPS).
+ *
+ * Solo se persiste el id de la zona manual; jamás coordenadas del usuario.
  */
 
-export type LocationSource = 'gps' | 'manual';
+export type LocationSource = EffectiveLocationSource;
 export type LocationRequestState = 'idle' | 'requesting' | 'granted' | 'failed';
 
 export interface LocationState {
+  /** Coordenadas efectivas: el ÚNICO origen válido para distancia y ranking. */
   coords: Coordinates;
   source: LocationSource;
+  /** Etiqueta de la referencia cuando no es GPS (zona manual o ciudad). */
+  label?: string;
   requestState: LocationRequestState;
   /** Motivo de la última falla (solo cuando requestState === 'failed'). */
   failureReason: LocationFailureReason | null;
-  manualLocation: ManualLocation;
-  useCurrentLocation: () => Promise<void>;
+  /** Zona elegida por el usuario, o null si nunca eligió una. */
+  manualLocation: ManualLocation | null;
+  /** Relee el GPS bajo demanda (acción, no hook). */
+  requestCurrentLocation: () => Promise<void>;
   setManualLocation: (location: ManualLocation) => void;
 }
 
@@ -47,7 +56,7 @@ const STORAGE_KEY = 'locavo.manualLocation.v1';
 const LocationContext = createContext<LocationState | null>(null);
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
-  const [manualLocation, setManualState] = useState<ManualLocation>(DEFAULT_MANUAL_LOCATION);
+  const [manualLocation, setManualState] = useState<ManualLocation | null>(null);
   const [gpsCoords, setGpsCoords] = useState<Coordinates | null>(null);
   const [requestState, setRequestState] = useState<LocationRequestState>('idle');
   const [failureReason, setFailureReason] = useState<LocationFailureReason | null>(null);
@@ -57,7 +66,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((storedId) => {
         if (!cancelled) {
-          // Un id desconocido/corrupto degrada al default seguro.
+          // Un id desconocido/corrupto NO inventa una selección: queda en null
+          // y la cadena canónica cae al centro de la ciudad activa.
           setManualState(resolveManualLocation(storedId));
         }
       })
@@ -67,7 +77,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const useCurrentLocation = useCallback(async () => {
+  const requestCurrentLocation = useCallback(async () => {
     setRequestState('requesting');
     setFailureReason(null);
     const result = await readCurrentLocation();
@@ -82,8 +92,22 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Intento AUTOMÁTICO al arrancar: sin esto el GPS "disponible" nunca entra a
+  // la cadena y toda la app mediría desde el centro de la ciudad. Una sola vez
+  // por montaje; el botón manual queda para reintentar.
+  const autoRequested = useRef(false);
+  useEffect(() => {
+    if (autoRequested.current) {
+      return;
+    }
+    autoRequested.current = true;
+    void requestCurrentLocation();
+  }, [requestCurrentLocation]);
+
   const setManualLocation = useCallback((location: ManualLocation) => {
     setManualState(location);
+    // Elegir una zona es una anulación EXPLÍCITA del usuario: se suelta la
+    // lectura de GPS para que la cadena canónica resuelva a esa zona.
     setGpsCoords(null);
     setRequestState('idle');
     setFailureReason(null);
@@ -91,17 +115,25 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<LocationState>(() => {
-    const usingGps = gpsCoords !== null;
+    const effective = resolveEffectiveLocation({ gps: gpsCoords, manual: manualLocation });
     return {
-      coords: usingGps ? gpsCoords : manualLocation.coords,
-      source: usingGps ? 'gps' : 'manual',
+      coords: effective.coords,
+      source: effective.source,
+      label: effective.label,
       requestState,
       failureReason,
       manualLocation,
-      useCurrentLocation,
+      requestCurrentLocation,
       setManualLocation,
     };
-  }, [gpsCoords, manualLocation, requestState, failureReason, useCurrentLocation, setManualLocation]);
+  }, [
+    gpsCoords,
+    manualLocation,
+    requestState,
+    failureReason,
+    requestCurrentLocation,
+    setManualLocation,
+  ]);
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
 }
@@ -115,11 +147,11 @@ export function useLocationState(): LocationState {
 }
 
 /**
- * Origen de distancia (presentación) derivado del MISMO estado de ubicación que
- * aporta las coordenadas usadas para calcular la distancia. Fuente única de
- * verdad: no duplica el estado de ubicación.
+ * Origen de distancia (presentación) derivado de la MISMA ubicación efectiva
+ * que aporta las coordenadas del cálculo. Fuente única de verdad: no duplica
+ * ni reinterpreta el estado de ubicación.
  */
 export function useDistanceOrigin(): DistanceOrigin {
-  const { source, manualLocation } = useLocationState();
-  return distanceOriginOf(source, manualLocation);
+  const { coords, source, label } = useLocationState();
+  return distanceOriginOf({ coords, source, label });
 }

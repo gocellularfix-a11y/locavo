@@ -2,14 +2,17 @@ import * as Location from 'expo-location';
 
 import { isValidCoordinates } from '../domain/distance';
 import type { Coordinates } from '../domain/place';
-import { CULIACAN_CENTER } from '../data/places.mock';
 
 /**
- * Lectura puntual de ubicación.
+ * Lectura puntual de ubicación (E/S del dispositivo).
  *
- * Solo se lee la posición cuando el usuario lo pide; no hay rastreo
- * continuo, ubicación en segundo plano ni almacenamiento remoto.
- * Toda falla degrada a la ubicación manual (Culiacán) sin bloquear la app.
+ * Este módulo SOLO habla con el GPS: la resolución de la ubicación efectiva
+ * (GPS → manual → centro de ciudad) vive en `effectiveLocation.ts`, fuente
+ * canónica única.
+ *
+ * No hay rastreo continuo, ubicación en segundo plano ni almacenamiento
+ * remoto. Toda falla se clasifica y degrada por la cadena canónica, sin
+ * bloquear la app y sin fingir jamás que se usó el GPS.
  */
 
 export type LocationFailureReason =
@@ -23,53 +26,6 @@ export interface CurrentLocationResult {
   status: 'granted' | 'failed';
   reason?: LocationFailureReason;
   coords: Coordinates | null;
-}
-
-export interface ManualLocation {
-  id: string;
-  label: string;
-  coords: Coordinates;
-}
-
-/** Zonas de demostración para ubicación manual dentro de Culiacán. */
-export const MANUAL_LOCATIONS: ManualLocation[] = [
-  { id: 'centro', label: 'Centro de Culiacán', coords: CULIACAN_CENTER },
-  { id: 'tres-rios', label: 'Tres Ríos', coords: { latitude: 24.8215, longitude: -107.3861 } },
-  { id: 'universitaria', label: 'Zona Universitaria', coords: { latitude: 24.8259, longitude: -107.3979 } },
-  { id: 'las-vegas', label: 'Las Vegas / Sur', coords: { latitude: 24.7895, longitude: -107.3958 } },
-];
-
-export const DEFAULT_MANUAL_LOCATION = MANUAL_LOCATIONS[0];
-
-/**
- * Devuelve la zona manual correspondiente a un id persistido; ante un valor
- * desconocido, corrupto u obsoleto regresa el default seguro (Centro).
- */
-export function resolveManualLocation(storedId: unknown): ManualLocation {
-  if (typeof storedId !== 'string') {
-    return DEFAULT_MANUAL_LOCATION;
-  }
-  return MANUAL_LOCATIONS.find((l) => l.id === storedId) ?? DEFAULT_MANUAL_LOCATION;
-}
-
-/**
- * Origen de distancia para PRESENTACIÓN (nunca expone datos crudos del
- * proveedor). `gps` = ubicación viva del usuario; `manual` = zona seleccionada o
- * el centro de ciudad por defecto (fallback), siempre con su etiqueta legible.
- * Se deriva del MISMO estado de ubicación que aporta las coordenadas usadas para
- * calcular la distancia, así el origen mostrado y las coordenadas coinciden.
- */
-export type DistanceOrigin = { type: 'gps' } | { type: 'manual'; label?: string };
-
-export function distanceOriginOf(
-  source: 'gps' | 'manual',
-  manualLocation: ManualLocation,
-): DistanceOrigin {
-  if (source === 'gps') {
-    return { type: 'gps' };
-  }
-  const label = manualLocation.label.trim();
-  return { type: 'manual', label: label.length > 0 ? label : undefined };
 }
 
 export const LOCATION_TIMEOUT_MS = 10_000;

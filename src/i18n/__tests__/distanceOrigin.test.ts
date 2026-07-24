@@ -3,7 +3,13 @@ import {
   formatDistanceWithOriginLocalized,
   formatTravelTimeLocalized,
 } from '../format';
-import { distanceOriginOf, type DistanceOrigin, type ManualLocation } from '../../services/location';
+import {
+  ACTIVE_CITY,
+  distanceOriginOf,
+  resolveEffectiveLocation,
+  type DistanceOrigin,
+  type ManualLocation,
+} from '../../services/effectiveLocation';
 
 const GPS: DistanceOrigin = { type: 'gps' };
 const KM_0_4_MI = 0.643; // ≈ 0.4 mi
@@ -29,9 +35,17 @@ describe('formatDistanceWithOriginLocalized — referencia de distancia (V UX fi
   });
 
   it('(5) fallback de centro de ciudad NUNCA dice "from your location"', () => {
-    const out = formatDistanceWithOriginLocalized(KM_0_4_MI, { type: 'manual', label: 'Centro de Culiacán' }, 'en');
-    expect(out).toBe('0.4 mi from Centro de Culiacán');
+    // El respaldo es su propia fuente: se nombra la ciudad, no una selección.
+    const cityOrigin = distanceOriginOf(resolveEffectiveLocation({}));
+    const out = formatDistanceWithOriginLocalized(KM_0_4_MI, cityOrigin, 'en');
+    expect(cityOrigin.type).toBe('city');
+    expect(out).toBe(`0.4 mi from ${ACTIVE_CITY.label}`);
     expect(out).not.toContain('from your location');
+    expect(out).not.toContain('from selected location');
+    // Sin etiqueta usable se nombra el centro de la ciudad, jamás "seleccionada".
+    expect(formatDistanceWithOriginLocalized(KM_0_4_MI, { type: 'city', label: '  ' }, 'en')).toBe(
+      '0.4 mi from the city center',
+    );
   });
 
   it('(6) traducciones en español (métrico: "1.2 km desde ...")', () => {
@@ -48,13 +62,19 @@ describe('formatDistanceWithOriginLocalized — referencia de distancia (V UX fi
 
   it('(8) el origen mostrado corresponde a la MISMA ubicación cuyas coordenadas dan la distancia', () => {
     const manual = ml('Zona Universitaria');
-    // Manual: la etiqueta del origen sale del mismo objeto que aporta las coords.
-    const origin = distanceOriginOf('manual', manual);
-    expect(origin).toEqual({ type: 'manual', label: 'Zona Universitaria' });
-    // GPS: sin etiqueta (usa las coords vivas del usuario).
-    expect(distanceOriginOf('gps', manual)).toEqual({ type: 'gps' });
-    // Etiqueta en blanco degrada a "seleccionada", no inventa nombre.
-    expect(distanceOriginOf('manual', ml('   '))).toEqual({ type: 'manual', label: undefined });
+    // Manual: la etiqueta del origen sale de la misma ubicación efectiva.
+    expect(distanceOriginOf(resolveEffectiveLocation({ manual }))).toEqual({
+      type: 'manual',
+      label: 'Zona Universitaria',
+    });
+    // GPS: sin etiqueta (usa las coords vivas del usuario) y gana a la zona manual.
+    const gps = { latitude: 34.4208, longitude: -119.6982 };
+    expect(distanceOriginOf(resolveEffectiveLocation({ gps, manual }))).toEqual({ type: 'gps' });
+    // Etiqueta en blanco no inventa nombre.
+    expect(distanceOriginOf(resolveEffectiveLocation({ manual: ml('   ') }))).toEqual({
+      type: 'manual',
+      label: undefined,
+    });
   });
 
   it('(9) el valor de distancia y el tiempo de viaje no cambian', () => {

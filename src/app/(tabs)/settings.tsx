@@ -8,7 +8,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { PreferencesSettings } from '../../preferences/PreferencesSettings';
 import { useI18n } from '../../i18n/I18nContext';
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '../../i18n/types';
-import { MANUAL_LOCATIONS } from '../../services/location';
+import { MANUAL_LOCATIONS } from '../../services/effectiveLocation';
 import { useLocationState } from '../../state/LocationContext';
 import { useAppTheme, type ThemeMode } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
@@ -138,7 +138,7 @@ export default function SettingsScreen() {
               <OptionRow
                 key={manual.id}
                 label={manual.label}
-                selected={location.source === 'manual' && location.manualLocation.id === manual.id}
+                selected={location.source === 'manual' && location.manualLocation?.id === manual.id}
                 onPress={() => location.setManualLocation(manual)}
               />
             ))}

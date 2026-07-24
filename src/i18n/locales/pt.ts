@@ -452,5 +452,6 @@ export const pt: TranslationCatalog = {
   'format.distanceFromOrigin': '{distance} {origin}',
   'distance.fromYourLocation': 'da sua localização',
   'distance.fromSelected': 'do local selecionado',
+  'distance.fromCityCenter': 'do centro da cidade',
   'distance.from': 'de {location}',
 };

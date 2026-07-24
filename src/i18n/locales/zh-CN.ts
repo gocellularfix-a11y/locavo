@@ -438,6 +438,7 @@ export const zhCN: TranslationCatalog = {
   'format.distanceFromOrigin': '{distance}{origin}',
   'distance.fromYourLocation': '距你的位置',
   'distance.fromSelected': '距所选位置',
+  'distance.fromCityCenter': '距市中心',
   'distance.from': '距 {location}',
   'format.travelTime': '约 {min} 分钟',
 };
