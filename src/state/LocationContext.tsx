@@ -11,8 +11,10 @@ import React, {
 import type { Coordinates } from '../domain/place';
 import {
   DEFAULT_MANUAL_LOCATION,
+  distanceOriginOf,
   readCurrentLocation,
   resolveManualLocation,
+  type DistanceOrigin,
   type LocationFailureReason,
   type ManualLocation,
 } from '../services/location';
@@ -110,4 +112,14 @@ export function useLocationState(): LocationState {
     throw new Error('useLocationState debe usarse dentro de LocationProvider');
   }
   return state;
+}
+
+/**
+ * Origen de distancia (presentación) derivado del MISMO estado de ubicación que
+ * aporta las coordenadas usadas para calcular la distancia. Fuente única de
+ * verdad: no duplica el estado de ubicación.
+ */
+export function useDistanceOrigin(): DistanceOrigin {
+  const { source, manualLocation } = useLocationState();
+  return distanceOriginOf(source, manualLocation);
 }

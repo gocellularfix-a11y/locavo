@@ -4,8 +4,9 @@ import { Pressable, View } from 'react-native';
 import { AppText } from '../../components/AppText';
 import { CategoryBadge } from '../../components/CategoryBadge';
 import { categoryLabelKey } from '../../domain/categories';
-import { formatDistanceLocalized } from '../../i18n/format';
+import { formatDistanceWithOriginLocalized } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
+import { useDistanceOrigin } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 import { RecommendationBadges } from './RecommendationBadges';
@@ -38,6 +39,7 @@ function OpenPill({ state }: { state: RecommendationOpenState }) {
 export function RecommendationCard({ model, onSelect }: RecommendationCardProps) {
   const { colors } = useAppTheme();
   const { t, locale } = useI18n();
+  const origin = useDistanceOrigin();
   const categoryLabel = t(categoryLabelKey(model.category));
 
   return (
@@ -70,8 +72,8 @@ export function RecommendationCard({ model, onSelect }: RecommendationCardProps)
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
         <OpenPill state={model.openState} />
         {model.distanceKm !== null ? (
-          <AppText variant="caption" tone="secondary">
-            {formatDistanceLocalized(model.distanceKm, locale)}
+          <AppText variant="caption" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {formatDistanceWithOriginLocalized(model.distanceKm, origin, locale)}
           </AppText>
         ) : null}
         <RecommendationConfidence level={model.confidence} />

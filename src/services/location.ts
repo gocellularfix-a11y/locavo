@@ -52,6 +52,26 @@ export function resolveManualLocation(storedId: unknown): ManualLocation {
   return MANUAL_LOCATIONS.find((l) => l.id === storedId) ?? DEFAULT_MANUAL_LOCATION;
 }
 
+/**
+ * Origen de distancia para PRESENTACIÓN (nunca expone datos crudos del
+ * proveedor). `gps` = ubicación viva del usuario; `manual` = zona seleccionada o
+ * el centro de ciudad por defecto (fallback), siempre con su etiqueta legible.
+ * Se deriva del MISMO estado de ubicación que aporta las coordenadas usadas para
+ * calcular la distancia, así el origen mostrado y las coordenadas coinciden.
+ */
+export type DistanceOrigin = { type: 'gps' } | { type: 'manual'; label?: string };
+
+export function distanceOriginOf(
+  source: 'gps' | 'manual',
+  manualLocation: ManualLocation,
+): DistanceOrigin {
+  if (source === 'gps') {
+    return { type: 'gps' };
+  }
+  const label = manualLocation.label.trim();
+  return { type: 'manual', label: label.length > 0 ? label : undefined };
+}
+
 export const LOCATION_TIMEOUT_MS = 10_000;
 
 /** Subconjunto de expo-location usado, inyectable para pruebas. */

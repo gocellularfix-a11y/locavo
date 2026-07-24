@@ -7,9 +7,10 @@ import { ConfidenceIndicator } from './ConfidenceIndicator';
 import { StatusBadge } from './StatusBadge';
 import { categoryLabelKey, getCategoryMeta } from '../domain/categories';
 import { confidenceLevelOf } from '../domain/places/LocavoPlace';
-import { formatDistanceLocalized, formatTravelTimeLocalized } from '../i18n/format';
+import { formatDistanceWithOriginLocalized, formatTravelTimeLocalized } from '../i18n/format';
 import { useI18n } from '../i18n/I18nContext';
 import type { ScoredPlace } from '../services/places/PlaceRankingService';
+import { useDistanceOrigin } from '../state/LocationContext';
 import { getCategoryVisual } from '../theme/categoryColors';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radii, spacing } from '../theme/tokens';
@@ -24,6 +25,7 @@ export interface PlaceCardProps {
 export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps) {
   const { colors, scheme } = useAppTheme();
   const { t, locale } = useI18n();
+  const origin = useDistanceOrigin();
   const { place, distanceKm, travelMinutes, status } = scored;
   const category = getCategoryMeta(place.category);
   const visual = getCategoryVisual(place.category, scheme);
@@ -80,8 +82,8 @@ export function PlaceCard({ scored, selected = false, onPress }: PlaceCardProps)
       <View
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}
       >
-        <AppText variant="body" tone="secondary">
-          {formatDistanceLocalized(distanceKm, locale)} ·{' '}
+        <AppText variant="body" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+          {formatDistanceWithOriginLocalized(distanceKm, origin, locale)} ·{' '}
           {formatTravelTimeLocalized(travelMinutes, locale)}
         </AppText>
         <ConfidenceIndicator level={confidenceLevelOf(place.verification.confidence)} />

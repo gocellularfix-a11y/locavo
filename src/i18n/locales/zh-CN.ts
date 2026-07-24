@@ -415,8 +415,12 @@ export const zhCN: TranslationCatalog = {
 
   'format.months': '1月|2月|3月|4月|5月|6月|7月|8月|9月|10月|11月|12月',
   'format.date': '{year}年{month}{day}日',
-  'format.distanceM': '距离 {value} 米',
-  'format.distanceKm': '距离 {value} 公里',
-  'format.distanceMi': '距离 {value} 英里',
+  'format.distanceM': '{value} 米',
+  'format.distanceKm': '{value} 公里',
+  'format.distanceMi': '{value} 英里',
+  'format.distanceFromOrigin': '{distance}{origin}',
+  'distance.fromYourLocation': '距你的位置',
+  'distance.fromSelected': '距所选位置',
+  'distance.from': '距 {location}',
   'format.travelTime': '约 {min} 分钟',
 };

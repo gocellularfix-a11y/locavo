@@ -38,15 +38,17 @@ describe('openStatusText', () => {
 });
 
 describe('distancia por locale (km/millas)', () => {
+  // V UX fix: la distancia es solo valor+unidad; la referencia de origen
+  // ("desde tu ubicación" / "desde {zona}") se añade por separado.
   it('métrico: metros bajo 1 km, km con decimal', () => {
-    expect(formatDistanceLocalized(0.35, 'es')).toBe('A 350 m');
-    expect(formatDistanceLocalized(1.44, 'es')).toBe('A 1.4 km');
-    expect(formatDistanceLocalized(1.44, 'de')).toBe('1.4 km entfernt');
+    expect(formatDistanceLocalized(0.35, 'es')).toBe('350 m');
+    expect(formatDistanceLocalized(1.44, 'es')).toBe('1.4 km');
+    expect(formatDistanceLocalized(1.44, 'de')).toBe('1.4 km');
   });
 
   it('imperial para en: millas', () => {
-    expect(formatDistanceLocalized(1.609344, 'en')).toBe('1.0 mi away');
-    expect(formatDistanceLocalized(0.08, 'en')).toBe('0.1 mi away');
+    expect(formatDistanceLocalized(1.609344, 'en')).toBe('1.0 mi');
+    expect(formatDistanceLocalized(0.08, 'en')).toBe('0.1 mi');
   });
 
   it('tiempo aproximado', () => {

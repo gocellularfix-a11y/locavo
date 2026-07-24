@@ -5,9 +5,11 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { AppText } from '../../components/AppText';
 import type { DecisionOption, DecisionSet } from '../../decision';
 import { categoryLabelKey } from '../../domain/categories';
-import { formatDistanceLocalized } from '../../i18n/format';
+import { formatDistanceLocalized, formatDistanceWithOriginLocalized } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nContext';
 import type { TranslationKey } from '../../i18n/locales/es';
+import type { DistanceOrigin } from '../../services/location';
+import { useDistanceOrigin } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { radii, spacing } from '../../theme/tokens';
 import { ContextBadges } from './ContextBadges';
@@ -50,11 +52,17 @@ function Chip({ labelKey, icon, tone }: { labelKey: TranslationKey; icon: keyof 
   );
 }
 
-/** Compone la etiqueta accesible: "Mejor opción. Nombre. Abierto ahora. 1,2 km." */
-function optionA11yLabel(role: string, model: IntentTodayCardModel, locale: Parameters<typeof formatDistanceLocalized>[1], statusText: string): string {
+/** Compone la etiqueta accesible: "Mejor opción. Nombre. Abierto ahora. 1,2 km desde tu ubicación." */
+function optionA11yLabel(
+  role: string,
+  model: IntentTodayCardModel,
+  origin: DistanceOrigin,
+  locale: Parameters<typeof formatDistanceLocalized>[1],
+  statusText: string,
+): string {
   const parts = [role, model.today.model.name, statusText];
   if (model.today.model.distanceKm !== null) {
-    parts.push(formatDistanceLocalized(model.today.model.distanceKm, locale));
+    parts.push(formatDistanceWithOriginLocalized(model.today.model.distanceKm, origin, locale));
   }
   return parts.join('. ');
 }
@@ -70,6 +78,7 @@ function OptionHeader({
 }) {
   const { t, locale } = useI18n();
   const { colors } = useAppTheme();
+  const origin = useDistanceOrigin();
   const roleLabel = t(decisionRoleLabelKey(option.role));
   const reasonLabel = option.reasonCodes[0] ? t(decisionReasonLabelKey(option.reasonCodes[0])) : '';
   const statusText = t(OPEN_STATE_KEY[model.today.model.openState]);
@@ -77,7 +86,7 @@ function OptionHeader({
     <View
       accessible
       accessibilityRole="header"
-      accessibilityLabel={optionA11yLabel(roleLabel, model, locale, statusText)}
+      accessibilityLabel={optionA11yLabel(roleLabel, model, origin, locale, statusText)}
       style={{ gap: 2 }}
     >
       <AppText variant={emphasis ? 'cardTitle' : 'label'} color={colors.brand}>

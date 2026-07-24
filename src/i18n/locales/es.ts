@@ -457,10 +457,14 @@ export const es = {
   // Formato local
   'format.months': 'ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic',
   'format.date': '{day} {month} {year}',
-  'format.distanceM': 'A {value} m',
-  'format.distanceKm': 'A {value} km',
-  'format.distanceMi': 'A {value} mi',
+  'format.distanceM': '{value} m',
+  'format.distanceKm': '{value} km',
+  'format.distanceMi': '{value} mi',
   'format.travelTime': 'Aprox. {min} min',
+  'format.distanceFromOrigin': '{distance} {origin}',
+  'distance.fromYourLocation': 'desde tu ubicación',
+  'distance.fromSelected': 'desde la ubicación seleccionada',
+  'distance.from': 'desde {location}',
 } as const;
 
 export type TranslationCatalog = Record<keyof typeof es, string>;

@@ -7,11 +7,12 @@ import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
 import {
   explainReasonsLocalized,
-  formatDistanceLocalized,
+  formatDistanceWithOriginLocalized,
   formatTravelTimeLocalized,
 } from '../i18n/format';
 import { useI18n } from '../i18n/I18nContext';
 import type { ScoredPlace } from '../services/places/PlaceRankingService';
+import { useDistanceOrigin } from '../state/LocationContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { cardShadow, radii, spacing } from '../theme/tokens';
 
@@ -25,6 +26,7 @@ export interface RecommendedPlaceCardProps {
 export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: RecommendedPlaceCardProps) {
   const { colors } = useAppTheme();
   const { t, locale } = useI18n();
+  const origin = useDistanceOrigin();
   const { place, distanceKm, travelMinutes, status, reasons } = scored;
 
   return (
@@ -60,8 +62,8 @@ export function RecommendedPlaceCard({ scored, onNavigate, onDetails }: Recommen
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}
       >
         <StatusBadge status={status} />
-        <AppText variant="bodyStrong" tone="secondary">
-          {formatDistanceLocalized(distanceKm, locale)} ·{' '}
+        <AppText variant="bodyStrong" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+          {formatDistanceWithOriginLocalized(distanceKm, origin, locale)} ·{' '}
           {formatTravelTimeLocalized(travelMinutes, locale)}
         </AppText>
       </View>

@@ -11,7 +11,7 @@ import {
   type PriceLevel,
 } from '../domain/places/LocavoPlace';
 import type { RecommendationReason } from '../services/places/PlaceRankingService';
-import type { LocationFailureReason } from '../services/location';
+import type { DistanceOrigin, LocationFailureReason } from '../services/location';
 
 /**
  * Formato local (V3): fechas, horas, distancias y textos derivados de datos
@@ -60,6 +60,33 @@ export function formatDistanceLocalized(distanceKm: number, locale: SupportedLoc
 
 export function formatTravelTimeLocalized(minutes: number, locale: SupportedLocale): string {
   return translateIn(locale, 'format.travelTime', { min: minutes });
+}
+
+/** Frase de ORIGEN ("desde tu ubicación" / "desde {zona}" / "desde la ubicación seleccionada"). */
+export function distanceOriginPhrase(origin: DistanceOrigin, locale: SupportedLocale): string {
+  if (origin.type === 'gps') {
+    return translateIn(locale, 'distance.fromYourLocation');
+  }
+  const label = origin.label?.trim();
+  return label
+    ? translateIn(locale, 'distance.from', { location: label })
+    : translateIn(locale, 'distance.fromSelected');
+}
+
+/**
+ * Distancia CON su punto de referencia explícito: "0.4 mi desde tu ubicación".
+ * El valor numérico de la distancia no cambia; solo se aclara el origen. El
+ * origen debe derivarse del mismo estado que aportó las coordenadas.
+ */
+export function formatDistanceWithOriginLocalized(
+  distanceKm: number,
+  origin: DistanceOrigin,
+  locale: SupportedLocale,
+): string {
+  return translateIn(locale, 'format.distanceFromOrigin', {
+    distance: formatDistanceLocalized(distanceKm, locale),
+    origin: distanceOriginPhrase(origin, locale),
+  });
 }
 
 function formatDateOnly(iso: string, locale: SupportedLocale): string | null {

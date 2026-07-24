@@ -430,8 +430,12 @@ export const fr: TranslationCatalog = {
 
   'format.months': 'janv|févr|mars|avr|mai|juin|juil|août|sept|oct|nov|déc',
   'format.date': '{day} {month} {year}',
-  'format.distanceM': 'À {value} m',
-  'format.distanceKm': 'À {value} km',
-  'format.distanceMi': 'À {value} mi',
+  'format.distanceM': '{value} m',
+  'format.distanceKm': '{value} km',
+  'format.distanceMi': '{value} mi',
+  'format.distanceFromOrigin': '{distance} {origin}',
+  'distance.fromYourLocation': 'depuis votre position',
+  'distance.fromSelected': 'depuis le lieu sélectionné',
+  'distance.from': 'depuis {location}',
   'format.travelTime': 'Environ {min} min',
 };

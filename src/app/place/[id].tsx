@@ -16,7 +16,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { confidenceLevelOf, type LocavoPlace } from '../../domain/places/LocavoPlace';
 import {
   explainReasonsLocalized,
-  formatDistanceLocalized,
+  formatDistanceWithOriginLocalized,
   formatTravelTimeLocalized,
   priceLevelText,
   sourceLabelLocalized,
@@ -28,7 +28,7 @@ import { useDirections } from '../../hooks/useDirections';
 import { analytics, placeSearchService } from '../../services/container';
 import { executePlaceAction } from '../../services/placeActionExecutor';
 import { scorePlace } from '../../services/places/PlaceRankingService';
-import { useLocationState } from '../../state/LocationContext';
+import { useDistanceOrigin, useLocationState } from '../../state/LocationContext';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing } from '../../theme/tokens';
 
@@ -70,6 +70,7 @@ export default function PlaceDetailScreen() {
   const { colors } = useAppTheme();
   const { t, locale } = useI18n();
   const location = useLocationState();
+  const distanceOrigin = useDistanceOrigin();
   const directions = useDirections();
   const { profile, dispatch } = usePreferences();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -224,8 +225,8 @@ export default function PlaceDetailScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}
         >
           <StatusBadge status={scored.status} />
-          <AppText variant="bodyStrong" tone="secondary">
-            {formatDistanceLocalized(scored.distanceKm, locale)} ·{' '}
+          <AppText variant="bodyStrong" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {formatDistanceWithOriginLocalized(scored.distanceKm, distanceOrigin, locale)} ·{' '}
             {formatTravelTimeLocalized(scored.travelMinutes, locale)}
           </AppText>
         </View>
